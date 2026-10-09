@@ -27,3 +27,6 @@
 | #105 | Garbled ElevenLabs voice + "trashy" grill | Always transcribe-check audio; keep the original voice by default; no grill |
 | #103 | Drink splash stained the shirt | Skip sources with thrown or drunk props |
 | #108 | Dark arms from the fit photo | Make a free Winston-in-the-fit image first |
+
+- Props: describe how they LOOK (credit cards: 'gold EMV chip, embossed numbers, colorful, generic'). Writing only 'no logos' made Genjutsu render blank gray cards that read as playing cards.
+- Keep the mouth shut for music edits: 'MOUTH CLOSED THE WHOLE VIDEO, lips together, he never talks' worked.

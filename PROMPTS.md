@@ -47,3 +47,7 @@ Unlimited only works with 1 image per run (4 images = paid).
 
 ## Diamond grill (retired 2026-10-08, Moses: "looks trashy")
 Shine came from a real close-up reference (pavé VVS stones on every tooth, gold borders) + "bright white sparkle, star flares, rainbow fire". 480p blurs stones; close-ups need 720p.
+
+## Mask removal + props (Scammers Be Like, #113)
+```nREMOVE the black ski mask completely: his whole face is visible the entire video. ... MOUTH CLOSED THE WHOLE VIDEO, lips together, he never talks, only smug confident facial expressions and eye movements. ... He holds and fans out a thick stack of real-looking colorful bank credit cards: matte black metal card, shiny gold card, lime-green card, royal blue card, silver card, each with a gold EMV chip and embossed numbers, generic design with no real bank brand. They must clearly read as CREDIT CARDS, NOT playing cards, NOT blank white cards.
+```
