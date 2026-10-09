@@ -1,0 +1,28 @@
+{
+  "_what": "Producer profile: the rules BeatDrop follows for this producer. For other producers this gets built automatically (see PRODUCT-NOTES.md).",
+  "producer": "MosesGotWater",
+  "channel_id": "UCcYg1IdQeBgkoVJJ7dxFNmg",
+  "lane": "Detroit / Michigan street rap",
+  "focus_artists": ["50Droppin", "YBN Lil Bro"],
+  "pairings": {
+    "_why": "Only artists who actually run together. Taken from what ranks in YouTube search for each lane artist (2026-10-05 research).",
+    "50Droppin": [["313 Mafia", "50Droppin"], ["50Droppin", "YBN Lil Bro"], ["50Droppin", "Happy Dranker"]],
+    "YBN Lil Bro": [["YBN Lil Bro", "50Droppin"], ["YBN Lil Bro", "Lil Mello"]],
+    "Babyface Ray": [["Babyface Ray", "Icewear Vezzo"]],
+    "Icewear Vezzo": [["Icewear Vezzo", "Babyface Ray"]],
+    "BandGang Lonnie Bands": [["BandGang Lonnie Bands", "Kookei"]]
+  },
+  "filename_artist_tags": {"BFACE": "Babyface Ray", "ICE VEZZO": "Icewear Vezzo", "YBN LIL BRO": "YBN Lil Bro", "LONNIE": "BandGang Lonnie Bands", "KOOKEI": "Kookei"},
+  "collaborators_from_filenames": ["Slajidi", "Stefanccino", "Seventyseven", "Hellasmokee", "Chapogotdasauce", "Delmonaxo", "FillTheSafe", "Basobeats", "Wonderyo", "Spitfiregotk"],
+  "title_format": "(FREE) {ARTIST1} x {ARTIST2} TYPE BEAT {YEAR} \"{NAME}\" | Prod MosesGotWater",
+  "rules": [
+    "Collab producers go in the description only, never the title or thumbnail.",
+    "Thumbnail = the artist photo, full frame. No text, no blur. BPM and key go in the description.",
+    "No guns, no other channels' watermarks or logos, no screenshots with app UI in thumbnails.",
+    "Pair only artists who actually make music together or share a lane.",
+    "Check by sound that a beat isn't already on the channel (dedupe.py) before uploading.",
+    "Stay consistent: mostly the same focus artists every week to own that search lane."
+  ],
+  "uploads_per_week": 14,
+  "contact": "IG @mosesgotwater | mosesgotwater@gmail.com"
+}

@@ -1,0 +1,12 @@
+# never commit credentials
+token.json
+client_secret*.json
+auth.py
+*.env
+.env*
+# no media
+*.mp4
+*.mov
+*.wav
+*.mp3
+*.zip
