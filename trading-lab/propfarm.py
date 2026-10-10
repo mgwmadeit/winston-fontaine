@@ -369,6 +369,79 @@ def tg_listener(get_state):
             print("listener error", e); time.sleep(5)
 
 
+# ---------------------------------------------------------------- HUNTER SYSTEM dashboard (Solo Leveling style) -> dashboard\data.json
+DASH = os.path.join(HERE, "dashboard")
+RANKS = [("E", 0), ("D", 1000), ("C", 3000), ("B", 7500), ("A", 15000), ("S", 25000)]
+DAILY_LOSS_LIMIT = 500
+
+
+def dashboard_data(trades, start, mode):
+    accts, led = farm(trades, start)
+    mine = [t for t in trades if t["entry_ts"] >= start]
+    closed = [t for t in mine if t["closed"]]
+    dec = decisions()
+    # XP: +10 per closed trade, +40 per green day, +500 per gate cleared, +1 per $10 paid
+    days = {}
+    for t in closed:
+        d = tday(t["exit_ts"]); days[d] = days.get(d, 0) + pnl(t, TIERS["A"])[0]
+    xp = 10 * len(closed) + 40 * sum(1 for v in days.values() if v > 0) + 500 * led["passed"] + int(led["payouts"] / 10)
+    level = int((xp / 50) ** 0.5) + 1
+    lo, hi = (level - 1) ** 2 * 50, level ** 2 * 50
+    rank = [r for r, v in RANKS if led["payouts"] >= v][-1]
+    nxt = next(((r, v) for r, v in RANKS if v > led["payouts"]), None)
+    today = tday(pd.Timestamp.now(tz=TZ))
+    tt = [t for t in closed if tday(t["exit_ts"]) == today]
+    today_pnl = sum(pnl(t, TIERS["A"])[0] for t in tt)
+    open_now = [t for t in mine if not t["closed"]]
+    shadows = []
+    for s in ("ORB", "ASIA", "VWAP"):
+        st = [t for t in closed if t["strat"] == s]
+        w = sum(1 for t in st if t["pts"] > 0); p = sum(pnl(t, TIERS["A"])[0] for t in st)
+        shadows.append(dict(key=s, name={"ORB": "KNIGHT", "ASIA": "PHANTOM", "VWAP": "GOLEM"}[s], cls=NAMES[s], trades=len(st), wins=w,
+                            losses=len(st) - w, pnl=round(p), level=1 + len(st) // 5 + max(0, int(p // 1000))))
+    gates = []
+    for a in accts:
+        prof = a["bal"] - RULES["start"]
+        if a["stage"] == "eval":
+            pct = max(0, min(100, prof / RULES["target"] * 100)); goal = f"{prof:+,.0f} / +{RULES['target']:,}"
+        else:
+            pct = min(100, a["good"] / RULES["pay_days"] * 100); goal = f"{a['good']}/{RULES['pay_days']} payout days • paid ${a['paid']:,.0f}"
+        room = a["bal"] - a["floor"]
+        gates.append(dict(name=a["name"], lane=a["lane"], risk=a["risk"], stage=a["stage"], status=a["status"], pct=round(pct, 1),
+                          goal=goal, room=round(room), danger=round(max(0, min(100, 100 - room / RULES["dd"] * 100)), 1)))
+    log = []
+    for t in sorted(mine, key=lambda x: x["exit_ts"] or x["entry_ts"], reverse=True)[:14]:
+        p = pnl(t, TIERS["A"])[0]
+        log.append(dict(time=f"{(t['exit_ts'] or t['entry_ts']):%a %I:%M %p}", strat=t["strat"], side="LONG" if t["side"] > 0 else "SHORT",
+                        text=(f"{t['entry']:.2f} → {t['exit']:.2f} ({t['pts']:+.1f} pts)" if t["closed"] else f"OPEN @ {t['entry']:.2f}, stop {t['stop']:.2f}"),
+                        pnl=round(p) if t["closed"] else None, you=dec.get(t["id"], "")))
+    return dict(mode=mode, updated=f"{pd.Timestamp.now(tz=TZ):%a %b %d %I:%M %p} ET",
+                hunter=dict(name="MOSESGOTWATER", rank=rank, level=level, xp=xp, xp_lo=lo, xp_hi=hi,
+                            next_rank=nxt[0] if nxt else None, next_need=round(nxt[1] - led["payouts"]) if nxt else 0),
+                quest=dict(pnl=round(today_pnl), limit=DAILY_LOSS_LIMIT, trades=len(tt), open=len(open_now),
+                           held=today_pnl > -DAILY_LOSS_LIMIT),
+                loot=dict(payouts=round(led["payouts"]), fees=round(led["fees"]), net=round(led["payouts"] - led["fees"]),
+                          evals=led["evals"], passed=led["passed"], blown=led["blown"]),
+                shadows=shadows, gates=gates, log=log)
+
+
+def write_dashboard(trades, state):
+    os.makedirs(DASH, exist_ok=True)
+    start = pd.Timestamp(state["start"])
+    live = [t for t in trades if t["entry_ts"] >= start]
+    if live: d = dashboard_data(trades, start, "LIVE PAPER")
+    else: d = dashboard_data(trades, trades[0]["entry_ts"] if trades else start, "DEMO: last week replay (paper starts Sun 6 PM ET)")
+    tmp = os.path.join(DASH, "data.tmp"); json.dump(d, open(tmp, "w", encoding="utf-8")); os.replace(tmp, os.path.join(DASH, "data.json"))
+
+
+def serve_dashboard(port=8787):
+    import http.server, functools
+    class Quiet(http.server.SimpleHTTPRequestHandler):
+        def log_message(self, *a, **k): pass                     # pythonw has no console to log to
+    h = functools.partial(Quiet, directory=DASH)
+    http.server.ThreadingHTTPServer(("127.0.0.1", port), h).serve_forever()
+
+
 # ---------------------------------------------------------------- main loop
 def load_state():
     if os.path.exists(STATE): return json.load(open(STATE))
@@ -384,6 +457,8 @@ def market_closed(now):
 def loop():
     state = load_state(); shared = {"trades": None, "state": state}
     threading.Thread(target=tg_listener, args=(lambda: shared,), daemon=True).start()
+    os.makedirs(DASH, exist_ok=True)
+    threading.Thread(target=serve_dashboard, daemon=True).start()
     print(f"Prop farm running. Paper start {state['start']}", flush=True)
     while True:
         now = pd.Timestamp.now(tz=TZ)
@@ -412,6 +487,7 @@ def loop():
                     dc_post("daily-report", embed={"title": "🌾 The farm at the close", "description": txt[:4000], "color": 0xf1c40f})
                     state["last_report"] = str(now.date())
                 json.dump(state, open(STATE, "w"))
+            if shared["trades"] is not None: write_dashboard(shared["trades"], state)
         except Exception as e:
             print(f"{now:%H:%M} error: {e}", flush=True)
         time.sleep(60 if not market_closed(now) else 300)
@@ -426,6 +502,8 @@ if __name__ == "__main__":
                   f"{t['exit']:.2f} {'' if t['closed'] else '(OPEN)'} {t['pts']:+.1f}pts  $200 lane: {q} MNQ ${pa:+,.0f}")
         st = {"start": str(trades[0]["entry_ts"]) if trades else pd.Timestamp.now(tz=TZ).isoformat()}
         print("\n" + report_text(trades, st))
+    elif sys.argv[1:] == ["dash"]:
+        m1, m5 = fetch(); write_dashboard(all_trades(m1, m5), load_state()); print(open(os.path.join(DASH, "data.json"), encoding="utf-8").read()[:1500])
     elif sys.argv[1:] == ["report"]:
         m1, m5 = fetch(); trades = all_trades(m1, m5); txt = report_text(trades, load_state())
         tg("sendMessage", json={"chat_id": TG_CHAT, "text": txt}); dc_post("daily-report", embed={"title": "🌾 The farm at the close", "description": txt[:4000], "color": 0xf1c40f})
