@@ -2,206 +2,287 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hunter System</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Hunter World</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{
-  --bg:#05070d; --panel:rgba(10,22,44,.72); --line:#2fb8ff; --glow:#3ad1ff; --dim:#6c8bb3; --text:#d9ecff;
-  --good:#3dffb0; --bad:#ff4d6d; --gold:#ffd166; --purple:#a77bff;
-}
+:root{--glow:#3ad1ff;--line:rgba(47,184,255,.6);--panel:rgba(6,16,34,.78);--text:#d9ecff;--dim:#7d98bd;--good:#3dffb0;--bad:#ff4d6d;--gold:#ffd166;--purple:#b693ff}
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{background:var(--bg);color:var(--text);font-family:Rajdhani,system-ui,sans-serif;min-height:100%}
-body{background:
-  radial-gradient(ellipse at 20% -10%,rgba(58,209,255,.18),transparent 55%),
-  radial-gradient(ellipse at 100% 110%,rgba(167,123,255,.14),transparent 50%),var(--bg);
-  overflow-x:hidden}
-body:before{content:"";position:fixed;inset:0;pointer-events:none;
-  background:repeating-linear-gradient(0deg,rgba(255,255,255,.025) 0 1px,transparent 1px 3px);z-index:50}
-.wrap{max-width:1280px;margin:0 auto;padding:20px 16px 40px}
-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
-.sys{font-family:Orbitron;font-weight:900;letter-spacing:.35em;font-size:clamp(18px,3vw,28px);color:#fff;
-  text-shadow:0 0 12px var(--glow),0 0 30px rgba(58,209,255,.5)}
-.mode{font-family:Orbitron;font-size:11px;letter-spacing:.15em;padding:6px 12px;border:1px solid var(--line);color:var(--glow);
-  background:rgba(47,184,255,.08);box-shadow:0 0 12px rgba(47,184,255,.25) inset}
-.mode.live{color:var(--good);border-color:var(--good)}
-.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}
-.panel{position:relative;background:var(--panel);border:1px solid rgba(47,184,255,.55);padding:16px 16px 14px;
-  box-shadow:0 0 18px rgba(47,184,255,.18),0 0 1px var(--glow) inset;backdrop-filter:blur(6px);animation:in .6s ease both}
-.panel:before,.panel:after{content:"";position:absolute;width:14px;height:14px;border:2px solid var(--glow);filter:drop-shadow(0 0 4px var(--glow))}
-.panel:before{top:-2px;left:-2px;border-right:0;border-bottom:0}
-.panel:after{bottom:-2px;right:-2px;border-left:0;border-top:0}
-@keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1}}
-.ttl{font-family:Orbitron;font-size:12px;letter-spacing:.28em;color:var(--glow);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
-.ttl small{font-family:Rajdhani;letter-spacing:.05em;color:var(--dim);font-size:13px}
-.c4{grid-column:span 4}.c5{grid-column:span 5}.c7{grid-column:span 7}.c8{grid-column:span 8}.c12{grid-column:span 12}.c3{grid-column:span 3}.c6{grid-column:span 6}
-@media(max-width:900px){.c3,.c4,.c5,.c6,.c7,.c8{grid-column:span 12}}
-.hunter{display:flex;gap:18px;align-items:center}
-.rank{width:82px;height:82px;flex:none;margin:14px 10px 14px 14px;display:grid;place-items:center;font-family:Orbitron;font-weight:900;font-size:56px;color:#fff;
-  border:2px solid var(--glow);transform:rotate(45deg);box-shadow:0 0 22px rgba(58,209,255,.6),0 0 40px rgba(58,209,255,.25) inset}
-.rank span{transform:rotate(-45deg);text-shadow:0 0 16px var(--glow)}
-.rank.S{border-color:var(--gold);box-shadow:0 0 26px rgba(255,209,102,.7)}.rank.S span{text-shadow:0 0 16px var(--gold)}
-.hname{font-family:Orbitron;font-weight:700;font-size:clamp(14px,4vw,18px);letter-spacing:.1em;overflow-wrap:anywhere}
-.hsub{color:var(--dim);font-size:15px;margin:2px 0 8px}
-.lvl{font-family:Orbitron;font-size:13px;color:var(--glow)}
-.bar{height:10px;background:rgba(255,255,255,.06);border:1px solid rgba(47,184,255,.35);margin-top:6px;overflow:hidden}
-.bar i{display:block;height:100%;background:linear-gradient(90deg,#1b7fff,var(--glow));box-shadow:0 0 10px var(--glow);transition:width 1s}
-.bar.gold i{background:linear-gradient(90deg,#c98b00,var(--gold));box-shadow:0 0 10px var(--gold)}
-.bar.red i{background:linear-gradient(90deg,#8a0020,var(--bad));box-shadow:0 0 10px var(--bad)}
-.q{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px dashed rgba(108,139,179,.25);font-size:17px}
-.q:last-child{border:0}
-.ok{color:var(--good);font-weight:700}.no{color:var(--bad);font-weight:700}.wait{color:var(--gold);font-weight:700}
-.big{font-family:Orbitron;font-weight:700;font-size:26px}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.stat{border:1px solid rgba(47,184,255,.25);padding:10px;background:rgba(47,184,255,.04)}
-.stat b{display:block;font-family:Orbitron;font-size:20px;margin-top:2px}
-.stat span{color:var(--dim);font-size:13px;letter-spacing:.08em;text-transform:uppercase}
-.gates{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
-.gate{border:1px solid rgba(47,184,255,.4);padding:12px;position:relative;overflow:hidden;background:rgba(5,12,26,.6)}
-.gate:before{content:"";position:absolute;right:-30px;top:-30px;width:90px;height:90px;border-radius:50%;
-  background:radial-gradient(circle,rgba(58,209,255,.55),rgba(167,123,255,.15) 55%,transparent 70%);animation:pulse 3s infinite}
-.gate.funded:before{background:radial-gradient(circle,rgba(255,209,102,.6),rgba(255,140,0,.15) 55%,transparent 70%)}
-.gate.blown{opacity:.45;filter:grayscale(1)}.gate.blown:before{display:none}
-@keyframes pulse{50%{transform:scale(1.15);opacity:.7}}
-.gname{font-family:Orbitron;font-size:13px;letter-spacing:.08em}
-.gtag{font-size:12px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;margin:2px 0 8px}
-.gtag em{font-style:normal;color:var(--glow)}.gate.funded .gtag em{color:var(--gold)}.gate.blown .gtag em{color:var(--bad)}
-.small{font-size:14px;color:var(--dim);margin-top:6px}
-.shadows{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-@media(max-width:600px){.shadows{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}}
-.shadow{text-align:center;padding:12px 8px;border:1px solid rgba(167,123,255,.45);background:linear-gradient(180deg,rgba(167,123,255,.08),transparent)}
-.shadow svg{width:64px;height:64px;filter:drop-shadow(0 0 10px var(--purple))}
-.sname{font-family:Orbitron;font-weight:700;letter-spacing:.2em;margin-top:6px;color:#e6dbff}
-.scls{color:var(--dim);font-size:13px;min-height:32px}
-.srec{font-size:15px;margin-top:4px}
-.log{max-height:360px;overflow:auto;font-size:15px;padding-right:12px}
-.row{display:grid;grid-template-columns:104px 52px 58px 1fr 82px;gap:8px;padding:7px 0;border-bottom:1px solid rgba(108,139,179,.15);align-items:center}
-@media(max-width:600px){.row{grid-template-columns:86px 50px 1fr 64px}.row .sd{display:none}}
-.row .t{color:var(--dim);font-size:13px}.row .st{font-family:Orbitron;font-size:11px;color:var(--purple)}
-.row .p{text-align:right;font-family:Orbitron;font-size:13px}
-.empty{color:var(--dim);padding:10px 0}
-.popup{position:fixed;left:50%;top:18%;transform:translate(-50%,-10px);min-width:min(520px,90vw);padding:22px 26px;text-align:center;
-  background:rgba(6,16,34,.95);border:1px solid var(--glow);box-shadow:0 0 40px rgba(58,209,255,.5);z-index:60;opacity:0;pointer-events:none;transition:.4s}
-.popup.on{opacity:1;transform:translate(-50%,0)}
-.popup h3{font-family:Orbitron;letter-spacing:.3em;color:var(--glow);font-size:13px;margin-bottom:10px}
-.popup p{font-size:22px;font-weight:600}
-footer{color:var(--dim);font-size:13px;margin-top:18px;text-align:center}
+html,body{height:100%;overflow:hidden;background:#03050b;color:var(--text);font-family:Rajdhani,system-ui,sans-serif}
+canvas{display:block;touch-action:none}
+.hud{position:fixed;background:var(--panel);border:1px solid var(--line);box-shadow:0 0 16px rgba(47,184,255,.25);padding:10px 14px;backdrop-filter:blur(6px);z-index:5}
+.hud:before{content:"";position:absolute;top:-2px;left:-2px;width:12px;height:12px;border:2px solid var(--glow);border-right:0;border-bottom:0}
+.tl{top:12px;left:12px;display:flex;gap:12px;align-items:center;max-width:calc(100vw - 24px)}
+.rk{width:46px;height:46px;flex:none;display:grid;place-items:center;transform:rotate(45deg);border:2px solid var(--glow);margin:6px;box-shadow:0 0 14px rgba(58,209,255,.6)}
+.rk b{transform:rotate(-45deg);font-family:Orbitron;font-weight:900;font-size:24px;color:#fff;text-shadow:0 0 10px var(--glow)}
+.nm{font-family:Orbitron;font-weight:700;font-size:13px;letter-spacing:.1em}
+.sub{color:var(--dim);font-size:13px}
+.bar{height:6px;width:150px;background:rgba(255,255,255,.08);margin-top:4px}.bar i{display:block;height:100%;background:linear-gradient(90deg,#1b7fff,var(--glow));box-shadow:0 0 8px var(--glow)}
+.tr{top:12px;right:12px;text-align:right;font-size:14px;line-height:1.5}
+.tr b{font-family:Orbitron;font-size:15px}
+.bl{bottom:12px;left:12px;font-size:15px;max-width:calc(100vw - 24px)}
+.ttl{font-family:Orbitron;font-size:10px;letter-spacing:.3em;color:var(--glow);margin-bottom:4px}
+.br{bottom:12px;right:12px;display:flex;gap:8px;padding:6px}
+.btn{font-family:Orbitron;font-size:11px;letter-spacing:.15em;color:var(--glow);border:1px solid var(--line);background:rgba(47,184,255,.08);padding:8px 12px;cursor:pointer;text-decoration:none}
+.btn:hover{background:rgba(47,184,255,.2)}
+.mode{position:fixed;top:12px;left:50%;transform:translateX(-50%);font-family:Orbitron;font-size:10px;letter-spacing:.15em;color:var(--gold);
+  border:1px solid rgba(255,209,102,.5);padding:5px 10px;background:rgba(20,14,2,.6);z-index:5;white-space:nowrap}
+.mode.live{color:var(--good);border-color:rgba(61,255,176,.5);background:rgba(2,20,12,.6)}
+@media(max-width:760px){.mode{top:auto;bottom:118px;font-size:9px}.tr{top:84px}.bar{width:110px}}
+.card{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.96);min-width:min(340px,90vw);max-width:90vw;padding:18px 20px;opacity:0;pointer-events:none;transition:.25s;z-index:10}
+.card.on{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+.card h3{font-family:Orbitron;font-size:16px;letter-spacing:.12em;margin-bottom:2px}
+.card .tag{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:12px}
+.card .ln{display:flex;justify-content:space-between;gap:20px;padding:5px 0;border-bottom:1px dashed rgba(125,152,189,.25);font-size:16px}
+.card .x{position:absolute;top:8px;right:12px;cursor:pointer;color:var(--dim);font-size:20px}
+.pop{position:fixed;left:50%;top:22%;transform:translate(-50%,-8px);padding:18px 26px;text-align:center;opacity:0;transition:.4s;z-index:12;pointer-events:none;min-width:min(480px,90vw)}
+.pop.on{opacity:1;transform:translate(-50%,0)}
+.pop .ttl{margin-bottom:8px}.pop p{font-size:21px;font-weight:600}
+.hint{position:fixed;bottom:64px;right:14px;color:var(--dim);font-size:12px;z-index:4}
+.loading{position:fixed;inset:0;display:grid;place-items:center;font-family:Orbitron;letter-spacing:.4em;color:var(--glow);background:#03050b;z-index:20;transition:opacity .8s}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <div class="sys">[ SYSTEM ]</div>
-    <div class="mode" id="mode">LOADING…</div>
-  </header>
-  <div class="grid">
-    <section class="panel c5">
-      <div class="ttl">STATUS <small id="updated"></small></div>
-      <div class="hunter">
-        <div class="rank" id="rankBox"><span id="rank">E</span></div>
-        <div style="flex:1;min-width:0">
-          <div class="hname" id="hname">HUNTER</div>
-          <div class="hsub" id="title">Rank E Hunter</div>
-          <div class="lvl">LV. <span id="lvl">1</span> <span style="color:var(--dim);font-family:Rajdhani;font-size:14px" id="xptxt"></span></div>
-          <div class="bar"><i id="xpbar" style="width:0"></i></div>
-          <div class="small" id="nextrank"></div>
-        </div>
-      </div>
-    </section>
-    <section class="panel c7">
-      <div class="ttl">DAILY QUEST <small>resets 6 PM ET</small></div>
-      <div class="q"><span>Hold the line: today's loss stays under <b id="lim">$500</b></span><span id="q1"></span></div>
-      <div class="q"><span>Today's P&amp;L (lane A)</span><span class="big" id="qpnl">$0</span></div>
-      <div class="q"><span>Trades closed today / open now</span><span id="q3"></span></div>
-      <div class="q"><span>Let the System trade. Don't touch it.</span><span class="ok">✔</span></div>
-    </section>
-    <section class="panel c12">
-      <div class="ttl">LOOT <small>paper Topstep 50K farm</small></div>
-      <div class="stats">
-        <div class="stat"><span>Payouts harvested</span><b id="pay" style="color:var(--gold)">$0</b></div>
-        <div class="stat"><span>Eval fees spent</span><b id="fees">$0</b></div>
-        <div class="stat"><span>Net</span><b id="net">$0</b></div>
-        <div class="stat"><span>Gates entered</span><b id="evals">0</b></div>
-        <div class="stat"><span>Gates cleared</span><b id="passed" style="color:var(--good)">0</b></div>
-        <div class="stat"><span>Deaths</span><b id="blown" style="color:var(--bad)">0</b></div>
-      </div>
-    </section>
-    <section class="panel c12">
-      <div class="ttl">GATES <small>each account is a dungeon • bar = progress • red bar = how close to dying</small></div>
-      <div class="gates" id="gates"></div>
-    </section>
-    <section class="panel c5">
-      <div class="ttl">SHADOW ARMY <small>your strategies</small></div>
-      <div class="shadows" id="shadows"></div>
-    </section>
-    <section class="panel c7">
-      <div class="ttl">BATTLE LOG <small>lane A $ • "you" = your Take/Skip</small></div>
-      <div class="log" id="log"></div>
-    </section>
-  </div>
-  <footer>Paper trading only • free data ~10 min delayed • refreshes every 30 s</footer>
+<div class="loading" id="loading">[ SYSTEM LOADING ]</div>
+<div class="mode" id="mode">…</div>
+<div class="hud tl">
+  <div class="rk"><b id="rank">E</b></div>
+  <div><div class="nm" id="hname">HUNTER</div><div class="sub" id="lvl">LV.1</div><div class="bar"><i id="xp" style="width:0"></i></div></div>
 </div>
-<div class="popup" id="popup"><h3>[ SYSTEM MESSAGE ]</h3><p id="popmsg"></p></div>
+<div class="hud tr">
+  <div class="ttl">LOOT</div>
+  <div>Payouts <b id="pay" style="color:var(--gold)">$0</b></div>
+  <div>Fees <b id="fees">$0</b> • Net <b id="net">$0</b></div>
+  <div class="sub">Gates <span id="gc">0</span> cleared • <span id="gd">0</span> dead</div>
+</div>
+<div class="hud bl">
+  <div class="ttl">DAILY QUEST</div>
+  <div>Hold the line (&gt; -$<span id="lim">500</span>): <b id="qs">CLEAR</b></div>
+  <div>Today <b id="qp">$0</b> • <span id="qt">0</span> closed • <span id="qo">0</span> open</div>
+</div>
+<div class="hud br"><a class="btn" href="stats.html">STATS</a><span class="btn" id="spin">SPIN: ON</span></div>
+<div class="hint">drag to look around • scroll / pinch to zoom • tap a gate or shadow</div>
+<div class="hud card" id="card"><span class="x" id="cx">×</span><h3 id="ch"></h3><div class="tag" id="ct"></div><div id="cb"></div></div>
+<div class="hud pop" id="pop"><div class="ttl">[ SYSTEM MESSAGE ]</div><p id="popm"></p></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 const money = v => (v < 0 ? "-$" : "$") + Math.abs(Math.round(v)).toLocaleString();
-const TITLES = {E:"The Weakest Hunter", D:"Awakened", C:"Dungeon Regular", B:"Gate Breaker", A:"Elite Hunter", S:"Shadow Monarch"};
-const SVG = {
-  ORB:'<svg viewBox="0 0 64 64"><path d="M32 4l10 10-4 8h6l-6 22 6 16H20l6-16-6-22h6l-4-8z" fill="#1a1030" stroke="#b693ff" stroke-width="2"/><path d="M26 22h12M28 30h8" stroke="#e6dbff" stroke-width="2"/><circle cx="28" cy="16" r="1.6" fill="#7df9ff"/><circle cx="36" cy="16" r="1.6" fill="#7df9ff"/></svg>',
-  ASIA:'<svg viewBox="0 0 64 64"><path d="M32 6c10 6 16 16 16 26 0 12-7 22-16 26-9-4-16-14-16-26C16 22 22 12 32 6z" fill="#1a1030" stroke="#b693ff" stroke-width="2"/><path d="M22 30c6-4 14-4 20 0" stroke="#e6dbff" stroke-width="2" fill="none"/><circle cx="27" cy="27" r="1.8" fill="#7df9ff"/><circle cx="37" cy="27" r="1.8" fill="#7df9ff"/><path d="M44 8a10 10 0 1 0 8 14 8 8 0 1 1-8-14z" fill="#b693ff" opacity=".6"/></svg>',
-  VWAP:'<svg viewBox="0 0 64 64"><rect x="14" y="12" width="36" height="44" rx="6" fill="#1a1030" stroke="#b693ff" stroke-width="2"/><path d="M14 24h36M22 12V6h20v6" stroke="#b693ff" stroke-width="2"/><circle cx="26" cy="32" r="2" fill="#7df9ff"/><circle cx="38" cy="32" r="2" fill="#7df9ff"/><path d="M24 44h16" stroke="#e6dbff" stroke-width="3"/></svg>'
-};
-function popup(msg){ $("popmsg").textContent = msg; $("popup").classList.add("on"); setTimeout(()=>$("popup").classList.remove("on"), 4200); }
-function seen(key, val){ try{ const o = localStorage.getItem(key); localStorage.setItem(key, val); return o; }catch(e){ return null; } }
-function render(d){
-  const live = d.mode.startsWith("LIVE");
-  $("mode").textContent = live ? "● " + d.mode : d.mode; $("mode").className = "mode" + (live ? " live" : "");
-  $("updated").textContent = "updated " + d.updated;
-  const h = d.hunter;
-  $("rank").textContent = h.rank; $("rankBox").className = "rank " + h.rank;
-  $("hname").textContent = h.name; $("title").textContent = `Rank ${h.rank} • ${TITLES[h.rank]}`;
-  $("lvl").textContent = h.level; $("xptxt").textContent = `${h.xp - h.xp_lo} / ${h.xp_hi - h.xp_lo} XP`;
-  $("xpbar").style.width = Math.min(100, (h.xp - h.xp_lo) / (h.xp_hi - h.xp_lo) * 100) + "%";
-  $("nextrank").textContent = h.next_rank ? `Next rank ${h.next_rank}: ${money(h.next_need)} more in payouts` : "Max rank reached.";
-  const q = d.quest;
-  $("lim").textContent = money(q.limit);
-  $("q1").innerHTML = q.held ? '<span class="ok">CLEAR</span>' : '<span class="no">FAILED</span>';
-  $("qpnl").textContent = money(q.pnl); $("qpnl").style.color = q.pnl >= 0 ? "var(--good)" : "var(--bad)";
-  $("q3").innerHTML = `<span class="${q.open ? "wait" : ""}">${q.trades} / ${q.open}</span>`;
-  const l = d.loot;
-  $("pay").textContent = money(l.payouts); $("fees").textContent = money(l.fees);
-  $("net").textContent = money(l.net); $("net").style.color = l.net >= 0 ? "var(--good)" : "var(--bad)";
-  $("evals").textContent = l.evals; $("passed").textContent = l.passed; $("blown").textContent = l.blown;
-  $("gates").innerHTML = d.gates.map(g => `
-    <div class="gate ${g.status === "blown" ? "blown" : g.stage}">
-      <div class="gname">${g.name}</div>
-      <div class="gtag"><em>${g.status === "blown" ? "DEAD" : g.stage === "funded" ? "CLEARED • FUNDED" : "IN DUNGEON"}</em> • lane ${g.lane} • $${g.risk} risk</div>
-      <div class="bar ${g.stage === "funded" ? "gold" : ""}"><i style="width:${g.pct}%"></i></div>
-      <div class="small">${g.goal}</div>
-      ${g.status === "blown" ? "" : `<div class="bar red" style="height:5px;margin-top:8px"><i style="width:${g.danger}%"></i></div>
-      <div class="small">${money(g.room)} left before death</div>`}
-    </div>`).join("");
-  $("shadows").innerHTML = d.shadows.map(s => `
-    <div class="shadow">${SVG[s.key]}<div class="sname">${s.name}</div><div class="scls">${s.cls}</div>
-    <div class="srec">LV.${s.level} • <span class="ok">${s.wins}W</span> <span class="no">${s.losses}L</span></div>
-    <div class="srec" style="color:${s.pnl >= 0 ? "var(--good)" : "var(--bad)"}">${money(s.pnl)}</div></div>`).join("");
-  $("log").innerHTML = d.log.length ? d.log.map(r => `
-    <div class="row"><span class="t">${r.time}</span><span class="st">${r.strat}</span><span class="sd" style="color:${r.side === "LONG" ? "var(--good)" : "var(--bad)"}">${r.side}</span>
-    <span>${r.text}${r.you ? ` <span style="color:var(--dim)">• you: ${r.you}</span>` : ""}</span>
-    <span class="p" style="color:${r.pnl == null ? "var(--gold)" : r.pnl >= 0 ? "var(--good)" : "var(--bad)"}">${r.pnl == null ? "OPEN" : money(r.pnl)}</span></div>`).join("")
-    : '<div class="empty">No battles yet. The System wakes up Sunday 6 PM ET.</div>';
-  // level-up / gate-cleared / death pop-ups (only for changes since your last visit)
-  const ol = seen("lvl", h.level), op = seen("passed", l.passed), ob = seen("blown", l.blown);
-  if (op !== null && +op < l.passed) popup("Gate cleared. An account is now FUNDED.");
-  else if (ol !== null && +ol < h.level) popup(`LEVEL UP! You are now level ${h.level}.`);
-  else if (ob !== null && +ob < l.blown) popup("A hunter has fallen. The System bought a new eval.");
+const C = {blue:0x3ad1ff, gold:0xffd166, purple:0xa77bff, red:0xff4d6d, stone:0x1a2233, dark:0x0b1020};
+
+// ---------- scene
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.setSize(innerWidth, innerHeight);
+document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x050a18, 0.018);
+scene.background = new THREE.Color(0x03050b);
+const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 400);
+camera.position.set(0, 14, 30);
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.target.set(0, 2, 0); controls.maxPolarAngle = Math.PI * 0.49;
+controls.minDistance = 10; controls.maxDistance = 60; controls.autoRotate = true; controls.autoRotateSpeed = 0.5;
+
+scene.add(new THREE.HemisphereLight(0x5a8cff, 0x0a0614, 0.55));
+const moon = new THREE.DirectionalLight(0x9fc6ff, 0.6); moon.position.set(-20, 30, 10); scene.add(moon);
+const core = new THREE.PointLight(C.blue, 1.4, 40); core.position.set(0, 6, 0); scene.add(core);
+
+// stars
+(() => {
+  const g = new THREE.BufferGeometry(), n = 1500, p = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) { const r = 120 + Math.random() * 80, t = Math.random() * Math.PI * 2, u = Math.random() * 0.9 + 0.05;
+    p[i*3] = r * Math.cos(t) * Math.sin(u * Math.PI); p[i*3+1] = r * Math.cos(u * Math.PI) * 0.8 + 20; p[i*3+2] = r * Math.sin(t) * Math.sin(u * Math.PI); }
+  g.setAttribute("position", new THREE.BufferAttribute(p, 3));
+  scene.add(new THREE.Points(g, new THREE.PointsMaterial({color:0xbfdcff, size:0.6, fog:false})));
+})();
+// big moon
+const moonMesh = new THREE.Mesh(new THREE.SphereGeometry(8, 32, 32), new THREE.MeshBasicMaterial({color:0xcfe4ff, fog:false}));
+moonMesh.position.set(-70, 55, -110); scene.add(moonMesh);
+const halo = new THREE.Mesh(new THREE.SphereGeometry(11, 32, 32), new THREE.MeshBasicMaterial({color:C.blue, transparent:true, opacity:.12, fog:false}));
+halo.position.copy(moonMesh.position); scene.add(halo);
+
+// ---------- floating island
+const island = new THREE.Group(); scene.add(island);
+const stoneMat = new THREE.MeshStandardMaterial({color:C.stone, roughness:.95, flatShading:true});
+const slab = new THREE.Mesh(new THREE.CylinderGeometry(16, 13, 2.5, 14, 1), stoneMat); slab.position.y = -1.25; island.add(slab);
+const under = new THREE.Mesh(new THREE.ConeGeometry(13, 14, 14, 3), stoneMat); under.rotation.x = Math.PI; under.position.y = -9.5; island.add(under);
+const floor = new THREE.Mesh(new THREE.CircleGeometry(15.6, 48), new THREE.MeshStandardMaterial({color:0x10182a, roughness:.8})); floor.rotation.x = -Math.PI/2; floor.position.y = 0.01; island.add(floor);
+// rune circles
+function ring(r, w, color, op) { const m = new THREE.Mesh(new THREE.RingGeometry(r, r + w, 96), new THREE.MeshBasicMaterial({color, transparent:true, opacity:op, side:THREE.DoubleSide}));
+  m.rotation.x = -Math.PI/2; m.position.y = 0.03; island.add(m); return m; }
+const runeA = ring(15, .18, C.blue, .8), runeB = ring(5.2, .12, C.blue, .7), runeC = ring(3.6, .06, C.purple, .8);
+for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2, s = new THREE.Mesh(new THREE.PlaneGeometry(.5, .9), new THREE.MeshBasicMaterial({color:C.blue, transparent:true, opacity:.7, side:THREE.DoubleSide}));
+  s.rotation.x = -Math.PI/2; s.rotation.z = -a; s.position.set(Math.cos(a) * 14.2, .04, Math.sin(a) * 14.2); island.add(s); }
+// floating rocks
+const rocks = [];
+for (let i = 0; i < 14; i++) { const r = new THREE.Mesh(new THREE.DodecahedronGeometry(Math.random() * 1.6 + .5, 0), stoneMat);
+  const a = Math.random() * Math.PI * 2, d = 22 + Math.random() * 18; r.position.set(Math.cos(a) * d, Math.random() * 14 - 6, Math.sin(a) * d);
+  r.userData = {base:r.position.y, sp:Math.random() * .6 + .2, ph:Math.random() * 6}; scene.add(r); rocks.push(r); }
+// mana particles
+const motes = (() => { const g = new THREE.BufferGeometry(), n = 260, p = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) { const a = Math.random() * Math.PI * 2, d = Math.random() * 15; p[i*3] = Math.cos(a) * d; p[i*3+1] = Math.random() * 12; p[i*3+2] = Math.sin(a) * d; }
+  g.setAttribute("position", new THREE.BufferAttribute(p, 3));
+  const m = new THREE.Points(g, new THREE.PointsMaterial({color:C.blue, size:.12, transparent:true, opacity:.8})); scene.add(m); return m; })();
+
+// ---------- text sprites
+function label(lines, color = "#d9ecff", scale = 1) {
+  const cv = document.createElement("canvas"), x = cv.getContext("2d"); cv.width = 512; cv.height = 128 * lines.length;
+  x.textAlign = "center"; x.textBaseline = "middle";
+  lines.forEach((t, i) => { x.font = (i ? "600 54px Rajdhani" : "700 58px Orbitron"); x.shadowColor = color; x.shadowBlur = 18; x.fillStyle = i ? "#a9c4e6" : color; x.fillText(t, 256, 64 + i * 118); });
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cv), transparent:true, depthWrite:false}));
+  s.scale.set(4.2 * scale, 1.05 * lines.length * scale, 1); return s;
 }
-async function load(){
-  try{ const r = await fetch("data.json?t=" + Date.now()); render(await r.json()); }
-  catch(e){ $("mode").textContent = "OFFLINE: is the farm running?"; }
+
+// ---------- hunter (center)
+const hunter = new THREE.Group(); scene.add(hunter);
+const coat = new THREE.MeshStandardMaterial({color:0x0c0f1a, roughness:.6, emissive:0x05101f});
+const body = new THREE.Mesh(new THREE.CylinderGeometry(.55, .9, 2.6, 8), coat); body.position.y = 1.3; hunter.add(body);
+const head = new THREE.Mesh(new THREE.SphereGeometry(.45, 16, 16), new THREE.MeshStandardMaterial({color:0xf3e9e0, roughness:.6})); head.position.y = 3.05; hunter.add(head);
+const hair = new THREE.Mesh(new THREE.SphereGeometry(.48, 16, 16, 0, Math.PI*2, 0, Math.PI*.55), new THREE.MeshStandardMaterial({color:0x111111})); hair.position.y = 3.12; hunter.add(hair);
+[-1, 1].forEach(s => { const e = new THREE.Mesh(new THREE.SphereGeometry(.06, 8, 8), new THREE.MeshBasicMaterial({color:C.blue})); e.position.set(s * .16, 3.08, .4); hunter.add(e); });
+const aura = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.8, 4.2, 24, 1, true), new THREE.MeshBasicMaterial({color:C.blue, transparent:true, opacity:.12, side:THREE.DoubleSide, depthWrite:false}));
+aura.position.y = 2; hunter.add(aura);
+let rankSprite = null;
+
+// ---------- gates + shadows (rebuilt from data)
+const gateGroup = new THREE.Group(), shadowGroup = new THREE.Group(); scene.add(gateGroup); scene.add(shadowGroup);
+const clickables = [];
+function clear(g) { while (g.children.length) g.remove(g.children[0]); }
+
+function makeGate(g, i, n) {
+  const step = Math.min(0.85, (Math.PI * 1.5) / Math.max(n - 1, 1)), grp = new THREE.Group(), a = -Math.PI / 2 + (i - (n - 1) / 2) * step, R = 10.5;   // back arc; front stays open for the army
+  grp.position.set(Math.cos(a) * R, 0, Math.sin(a) * R); grp.lookAt(0, 0, 0);
+  const dead = g.status === "blown", col = dead ? 0x555566 : g.stage === "funded" ? C.gold : C.blue;
+  const pm = new THREE.MeshStandardMaterial({color:dead ? 0x22252e : 0x2a3348, roughness:.9, flatShading:true});
+  const p1 = new THREE.Mesh(new THREE.BoxGeometry(.7, 5, .7), pm), p2 = p1.clone(), lintel = new THREE.Mesh(new THREE.BoxGeometry(4.6, .7, .9), pm);
+  p1.position.set(-1.9, 2.5, 0); p2.position.set(1.9, 2.5, 0); lintel.position.set(0, 5.2, 0);
+  if (dead) { p2.rotation.z = 1.35; p2.position.set(2.8, .4, .6); lintel.rotation.z = .5; lintel.position.set(.4, .5, -.8); p1.scale.y = .6; p1.position.y = 1.5; }
+  grp.add(p1, p2, lintel);
+  const parts = [p1, p2, lintel];
+  if (!dead) {
+    const portal = new THREE.Mesh(new THREE.CircleGeometry(1.6, 48), new THREE.MeshBasicMaterial({color:col, transparent:true, opacity:.55, side:THREE.DoubleSide}));
+    portal.position.set(0, 2.5, 0); portal.scale.y = 1.35; grp.add(portal);
+    const swirl = new THREE.Mesh(new THREE.RingGeometry(.4, 1.5, 48, 1, 0, Math.PI * 1.4), new THREE.MeshBasicMaterial({color:0xffffff, transparent:true, opacity:.25, side:THREE.DoubleSide}));
+    swirl.position.set(0, 2.5, .02); swirl.scale.y = 1.35; grp.add(swirl);
+    const prog = new THREE.Mesh(new THREE.RingGeometry(1.7, 1.95, 64, 1, Math.PI / 2, -Math.max(.02, g.pct / 100) * Math.PI * 2), new THREE.MeshBasicMaterial({color:col, side:THREE.DoubleSide}));
+    prog.position.set(0, 2.5, .03); prog.scale.y = 1.35; grp.add(prog);
+    const light = new THREE.PointLight(col, 1.2, 8); light.position.set(0, 2.5, 1); grp.add(light);
+    grp.userData.anim = {portal, swirl, light};
+    parts.push(portal, swirl, prog);
+  }
+  const lb = label([g.name, dead ? "DEAD" : g.stage === "funded" ? "CLEARED • FUNDED" : `${Math.round(g.pct)}% to target`], dead ? "#8a8f9e" : g.stage === "funded" ? "#ffd166" : "#3ad1ff", .9);
+  lb.position.set(0, 6.6, 0); grp.add(lb);
+  parts.forEach(m => { m.userData.info = {kind:"gate", g}; clickables.push(m); });
+  gateGroup.add(grp);
 }
-load(); setInterval(load, 30000);
+
+function makeShadow(s, k) {
+  const grp = new THREE.Group(), baseA = Math.PI / 2 + (k - 1) * 0.5, R = 8.6;
+  const count = Math.min(5, 1 + Math.floor(s.level / 2));
+  const mat = new THREE.MeshStandardMaterial({color:0x140a26, emissive:0x3a1f78, emissiveIntensity:.9, roughness:.4, transparent:true, opacity:.95});
+  for (let j = 0; j < count; j++) {
+    const f = new THREE.Group(), off = (j - (count - 1) / 2) * 0.9, a = baseA + off * 0.12, rr = R + Math.abs(off) * .5;
+    f.position.set(Math.cos(a) * rr, 0, Math.sin(a) * rr);
+    const sc = j === Math.floor(count / 2) ? 1.15 : .85;
+    let torso;
+    if (s.key === "VWAP") torso = new THREE.Mesh(new THREE.BoxGeometry(1.3, 1.9, .9), mat);
+    else if (s.key === "ASIA") torso = new THREE.Mesh(new THREE.ConeGeometry(.75, 2.2, 6), mat);
+    else torso = new THREE.Mesh(new THREE.CylinderGeometry(.35, .6, 2, 6), mat);
+    torso.position.y = 1.1;
+    const hd = new THREE.Mesh(s.key === "ORB" ? new THREE.ConeGeometry(.33, .8, 6) : new THREE.SphereGeometry(.36, 10, 10), mat); hd.position.y = 2.5;
+    [-1, 1].forEach(q => { const e = new THREE.Mesh(new THREE.SphereGeometry(.07, 8, 8), new THREE.MeshBasicMaterial({color:0x7df9ff})); e.position.set(q * .13, 2.5, .3); f.add(e); });
+    if (s.key === "ORB") { const sw = new THREE.Mesh(new THREE.BoxGeometry(.1, 2.2, .1), new THREE.MeshBasicMaterial({color:0xb693ff})); sw.position.set(.7, 1.3, .2); sw.rotation.z = .25; f.add(sw); }
+    f.add(torso, hd); f.scale.setScalar(sc); f.lookAt(0, 0, 0);
+    f.userData.bob = {ph:Math.random() * 6};
+    [torso, hd].forEach(m => { m.userData.info = {kind:"shadow", s}; clickables.push(m); });
+    grp.add(f);
+  }
+  const mid = new THREE.Vector3(Math.cos(baseA) * (R + 1.4), 3.7, Math.sin(baseA) * (R + 1.4));
+  const lb = label([s.name, `LV.${s.level} • ${s.wins}W ${s.losses}L`], "#c9b3ff", .75); lb.position.copy(mid); grp.add(lb);
+  const glow = new THREE.Mesh(new THREE.CircleGeometry(1.8, 32), new THREE.MeshBasicMaterial({color:C.purple, transparent:true, opacity:.18}));
+  glow.rotation.x = -Math.PI/2; glow.position.set(Math.cos(baseA) * R, .05, Math.sin(baseA) * R); grp.add(glow);
+  shadowGroup.add(grp);
+}
+
+// ---------- data -> world
+let last = null;
+function build(d) {
+  clickables.length = 0; clear(gateGroup); clear(shadowGroup);
+  const gates = d.gates.slice(-10);                         // newest 10 gates on the island
+  gates.forEach((g, i) => makeGate(g, i, gates.length));
+  d.shadows.forEach((s, k) => makeShadow(s, k));
+  if (rankSprite) hunter.remove(rankSprite);
+  rankSprite = label([`RANK ${d.hunter.rank}`, `LV.${d.hunter.level}`], d.hunter.rank === "S" ? "#ffd166" : "#3ad1ff", 1); rankSprite.position.y = 4.6; hunter.add(rankSprite);
+  [body, head, hair].forEach(m => { m.userData.info = {kind:"hunter", d}; clickables.push(m); });
+}
+function hud(d) {
+  const live = d.mode.startsWith("LIVE"); $("mode").textContent = (live ? "● " : "") + d.mode; $("mode").className = "mode" + (live ? " live" : "");
+  const h = d.hunter; $("rank").textContent = h.rank; $("hname").textContent = h.name;
+  $("lvl").textContent = `LV.${h.level} • ${h.xp - h.xp_lo}/${h.xp_hi - h.xp_lo} XP`; $("xp").style.width = Math.min(100, (h.xp - h.xp_lo) / (h.xp_hi - h.xp_lo) * 100) + "%";
+  const l = d.loot; $("pay").textContent = money(l.payouts); $("fees").textContent = money(l.fees);
+  $("net").textContent = money(l.net); $("net").style.color = l.net >= 0 ? "var(--good)" : "var(--bad)"; $("gc").textContent = l.passed; $("gd").textContent = l.blown;
+  const q = d.quest; $("lim").textContent = q.limit; $("qs").textContent = q.held ? "CLEAR" : "FAILED"; $("qs").style.color = q.held ? "var(--good)" : "var(--bad)";
+  $("qp").textContent = money(q.pnl); $("qp").style.color = q.pnl >= 0 ? "var(--good)" : "var(--bad)"; $("qt").textContent = q.trades; $("qo").textContent = q.open;
+}
+function pop(m) { $("popm").textContent = m; $("pop").classList.add("on"); setTimeout(() => $("pop").classList.remove("on"), 4200); }
+function seen(k, v) { try { const o = localStorage.getItem(k); localStorage.setItem(k, v); return o; } catch (e) { return null; } }
+async function load() {
+  try {
+    const d = await (await fetch("data.json?t=" + Date.now())).json();
+    const sig = JSON.stringify([d.gates, d.shadows, d.hunter]);
+    if (sig !== last) { build(d); last = sig; }
+    hud(d);
+    const ol = seen("w_lvl", d.hunter.level), op = seen("w_passed", d.loot.passed), ob = seen("w_blown", d.loot.blown);
+    if (op !== null && +op < d.loot.passed) pop("Gate cleared. An account is now FUNDED.");
+    else if (ol !== null && +ol < d.hunter.level) pop(`LEVEL UP! You are now level ${d.hunter.level}.`);
+    else if (ob !== null && +ob < d.loot.blown) pop("A gate collapsed. The System bought a new eval.");
+  } catch (e) { $("mode").textContent = "OFFLINE: is the farm running?"; }
+  $("loading").style.opacity = 0; setTimeout(() => $("loading").style.display = "none", 900);
+}
+
+// ---------- click / tap info cards
+const ray = new THREE.Raycaster(), ptr = new THREE.Vector2(); let downAt = null;
+addEventListener("pointerdown", e => downAt = [e.clientX, e.clientY], true);
+renderer.domElement.addEventListener("click", e => {
+  if (!downAt || Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 6) return;
+  ptr.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1); ray.setFromCamera(ptr, camera);
+  const hit = ray.intersectObjects(clickables, false)[0]; if (!hit) return $("card").classList.remove("on");
+  const info = hit.object.userData.info, L = (a, b, c) => `<div class="ln"><span>${a}</span><b style="color:${c || "inherit"}">${b}</b></div>`;
+  if (info.kind === "gate") { const g = info.g;
+    $("ch").textContent = g.name; $("ct").textContent = g.status === "blown" ? "Collapsed gate (blown eval)" : g.stage === "funded" ? "Cleared gate (funded account)" : "Active dungeon (evaluation)";
+    $("cb").innerHTML = L("Lane / risk per trade", `${g.lane} • $${g.risk}`) + L(g.stage === "funded" ? "Payout progress" : "Progress to target", g.goal) +
+      (g.status === "blown" ? L("Status", "DEAD", "var(--bad)") : L("Room before death", money(g.room), g.danger > 60 ? "var(--bad)" : "var(--good)"));
+  } else if (info.kind === "shadow") { const s = info.s;
+    $("ch").textContent = s.name; $("ct").textContent = "Shadow soldier • " + s.cls;
+    $("cb").innerHTML = L("Level", s.level) + L("Battles", s.trades) + L("Wins / losses", `${s.wins} / ${s.losses}`) + L("Loot (lane A)", money(s.pnl), s.pnl >= 0 ? "var(--good)" : "var(--bad)");
+  } else { const d = info.d, h = d.hunter;
+    $("ch").textContent = h.name; $("ct").textContent = `Rank ${h.rank} hunter`;
+    $("cb").innerHTML = L("Level", h.level) + L("XP", h.xp) + L("Next rank", h.next_rank ? `${h.next_rank} (${money(h.next_need)} more payouts)` : "MAX") + L("Net loot", money(d.loot.net), d.loot.net >= 0 ? "var(--good)" : "var(--bad)");
+  }
+  $("card").classList.add("on");
+});
+$("cx").onclick = () => $("card").classList.remove("on");
+$("spin").onclick = () => { controls.autoRotate = !controls.autoRotate; $("spin").textContent = "SPIN: " + (controls.autoRotate ? "ON" : "OFF"); };
+addEventListener("resize", () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+if (innerWidth < 760) camera.position.set(0, 18, 40);
+
+// ---------- animate
+const clock = new THREE.Clock();
+(function tick() {
+  const t = clock.getElapsedTime();
+  runeA.rotation.z = t * .05; runeB.rotation.z = -t * .2; runeC.rotation.z = t * .35;
+  aura.material.opacity = .1 + Math.sin(t * 2) * .04; aura.scale.setScalar(1 + Math.sin(t * 2) * .03);
+  hunter.position.y = Math.sin(t * 1.2) * .06; core.intensity = 1.2 + Math.sin(t * 1.5) * .3;
+  rocks.forEach(r => { r.position.y = r.userData.base + Math.sin(t * r.userData.sp + r.userData.ph) * .8; r.rotation.y += .002; });
+  const mp = motes.geometry.attributes.position; for (let i = 0; i < mp.count; i++) { let y = mp.getY(i) + .02; if (y > 12) y = 0; mp.setY(i, y); } mp.needsUpdate = true;
+  gateGroup.children.forEach((g, i) => { const a = g.userData.anim; if (!a) return; a.swirl.rotation.z = -t * 1.5 - i; a.portal.material.opacity = .45 + Math.sin(t * 2 + i) * .12; a.light.intensity = 1 + Math.sin(t * 2 + i) * .4; });
+  shadowGroup.children.forEach(grp => grp.children.forEach(f => { if (f.userData.bob) f.position.y = Math.sin(t * 1.6 + f.userData.bob.ph) * .08; }));
+  controls.update(); renderer.render(scene, camera); requestAnimationFrame(tick);
+})();
+(document.fonts ? document.fonts.ready : Promise.resolve()).then(() => { load(); setInterval(load, 30000); });
 </script>
 </body>
 </html>
