@@ -2,12 +2,13 @@
 # Every strategy = signal family x timeframe x session x stop x exit.  MNQ, $200 risk per trade, fees + slippage.
 # Periods:  TRAIN Oct 2023-Sep 2025 | TEST Oct 2025-Mar 2026 | RECENT = last 6 months (Apr 2026 -> today)
 #   python lab.py          -> writes lab_results.csv + lab_trades.parquet
-import os, time, numpy as np, pandas as pd
+import os, sys, time, numpy as np, pandas as pd
 from numba import njit
 from run_published import load
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-PV, TICK, FEE, RISK = 2.0, 0.25, 0.62, 200.0          # MNQ
+SYM = sys.argv[1] if len(sys.argv) > 1 else "NQ"
+PV, TICK, FEE, RISK = {"NQ": (2.0, 0.25, 0.62, 200.0), "GC": (10.0, 0.10, 0.82, 200.0)}[SYM]   # MNQ / MGC micros
 COST = 2 * TICK * PV + 2 * FEE                         # per contract round trip
 TRAIN_END, TEST_END = pd.Timestamp("2025-10-01").date(), pd.Timestamp("2026-04-01").date()
 
@@ -15,7 +16,7 @@ SESSIONS = {  # name: (entry window start, end in minutes of day ET, flat time m
     "NYAM": (570, 690, 955, None), "NY": (570, 930, 955, None),
     "LON": (180, 480, 565, None), "ASIA": (1140, 120, 175, 1140),
     "AFTER10_AM": (600, 720, 955, None), "AFTER10_ALL": (600, 930, 955, None)}
-STOPS = [("fix15", 15), ("fix40", 40), ("atr10", 0.10), ("atr25", 0.25)]
+STOPS = [("fix15", 15), ("fix40", 40), ("atr10", 0.10), ("atr25", 0.25)] if SYM == "NQ" else [("fix3", 3), ("fix8", 8), ("atr10", 0.10), ("atr25", 0.25)]
 EXITS = [("1R", 1.0, 0), ("2R", 2.0, 0), ("hold", 0.0, 0), ("60min", 0.0, 60)]
 TFS = [5, 15, 30, 60]
 
@@ -68,7 +69,7 @@ def supertrend(b, n=10, m=3.0):
 
 
 def build():
-    m = load("NQ")
+    m = load(SYM)
     t = m.index; tod = t.hour * 60 + t.minute
     tday = (t + pd.Timedelta(hours=6)).normalize().tz_localize(None)          # trading day (18:00 ET starts the next one)
     m = m.assign(tod=tod, tday=tday)
@@ -195,8 +196,9 @@ def main():
                         sid += 1
         print(f"tf {tf}: {sid} strategies so far ({time.time()-t0:.0f}s)", flush=True)
     meta = pd.DataFrame(rows); tr = pd.concat(trades, ignore_index=True)
-    tr.to_parquet(os.path.join(HERE, "lab_trades.parquet"))
-    meta.to_csv(os.path.join(HERE, "lab_meta.csv"), index=False)
+    sfx = "" if SYM == "NQ" else "_" + SYM
+    tr.to_parquet(os.path.join(HERE, f"lab_trades{sfx}.parquet"))
+    meta.to_csv(os.path.join(HERE, f"lab_meta{sfx}.csv"), index=False)
     print("done", len(meta), "strategies,", len(tr), "trades", f"{time.time()-t0:.0f}s")
 
 

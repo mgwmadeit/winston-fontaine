@@ -1,10 +1,11 @@
 # Scores every lab strategy in 3 periods and picks survivors.  python lab_score.py
-import os, numpy as np, pandas as pd
+import os, sys, numpy as np, pandas as pd
 HERE = os.path.dirname(os.path.abspath(__file__))
+SFX = "" if len(sys.argv) < 2 or sys.argv[1] == "NQ" else "_" + sys.argv[1]
 TRAIN_END, TEST_END = pd.Timestamp("2025-10-01"), pd.Timestamp("2026-04-01")
 
-meta = pd.read_csv(os.path.join(HERE, "lab_meta.csv"))
-tr = pd.read_parquet(os.path.join(HERE, "lab_trades.parquet"))
+meta = pd.read_csv(os.path.join(HERE, f"lab_meta{SFX}.csv"))
+tr = pd.read_parquet(os.path.join(HERE, f"lab_trades{SFX}.parquet"))
 tr["date"] = pd.to_datetime(tr["date"])
 tr["per"] = np.where(tr.date < TRAIN_END, "train", np.where(tr.date < TEST_END, "test", "recent"))
 weeks = {"train": 104, "test": 26, "recent": 27}
@@ -20,7 +21,7 @@ res = meta.set_index("id").join(st).fillna({c: 0 for c in st.columns if c.endswi
 res["full_totR"] = res[["train_totR", "test_totR", "recent_totR"]].sum(axis=1)
 res["trades_per_week"] = (res.train_n + res.test_n + res.recent_n) / 157
 res["random"] = res.family.str.startswith("RANDOM")
-res.to_csv(os.path.join(HERE, "lab_results.csv"))
+res.to_csv(os.path.join(HERE, f"lab_results{SFX}.csv"))
 
 # Survivors: picked on TRAIN only, then must ALSO be positive on unseen TEST and on the RECENT 6 months
 pick = (res.train_n >= 100) & (res.train_avgR > 0.03) & (res.train_pf > 1.1)
@@ -40,7 +41,7 @@ for col in ("tf", "session", "stop", "exit"):
     print(f"\nBY {col.upper()}:", real.groupby(col).full_totR.apply(lambda x: f"{(x>0).mean()*100:.0f}% positive").to_dict())
 cols = ["family", "tf", "session", "stop", "exit", "trades_per_week", "train_n", "train_win", "train_avgR", "train_pf", "test_totR", "test_pf", "recent_totR", "recent_pf", "full_totR"]
 S = res[surv].sort_values("recent_totR", ascending=False)
-S.to_csv(os.path.join(HERE, "lab_survivors.csv"))
+S.to_csv(os.path.join(HERE, f"lab_survivors{SFX}.csv"))
 print(f"\nTOP 40 SURVIVORS (sorted by last-6-month R):")
 print(S[cols].head(40).round(2).to_string())
 print("\nORB sanity check (orb5_break, tf5, NY, atr10, hold):")
