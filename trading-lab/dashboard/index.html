@@ -7,88 +7,97 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--glow:#3ad1ff;--line:rgba(58,209,255,.55);--panel:rgba(4,12,28,.62);--text:#e2f1ff;--dim:#8aa6c9;--good:#3dffb0;--bad:#ff4d6d;--gold:#ffd166;--purple:#b693ff}
+:root{--glow:#3ad1ff;--line:rgba(58,209,255,.55);--panel:rgba(4,12,28,.6);--text:#e2f1ff;--dim:#8aa6c9;--good:#3dffb0;--bad:#ff4d6d;--gold:#ffd166;--purple:#b693ff}
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;overflow:hidden;background:#02040a;color:var(--text);font-family:Rajdhani,system-ui,sans-serif}
-#bg{position:fixed;inset:-3%;background:url(art/hunter-bg-16x9.jpg) center/cover no-repeat;animation:drift 60s ease-in-out infinite alternate;transform-origin:70% 45%}
-@keyframes drift{from{transform:scale(1)}to{transform:scale(1.05)}}
-#flash{position:fixed;inset:0;background:radial-gradient(ellipse at 72% 35%,rgba(150,220,255,.35),transparent 60%);opacity:0;pointer-events:none;mix-blend-mode:screen}
+html,body{height:100%;overflow:hidden;background:#02040a;color:var(--text);font-family:Rajdhani,system-ui,sans-serif;user-select:none;-webkit-user-select:none}
+#gl{position:fixed;inset:0;width:100%;height:100%;cursor:grab;touch-action:none}
+#gl.drag{cursor:grabbing}
 #fx{position:fixed;inset:0;pointer-events:none}
-.vig{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 45%,rgba(0,0,0,.65) 100%),linear-gradient(180deg,rgba(0,0,0,.35),transparent 25%,transparent 70%,rgba(0,0,0,.55))}
-.scan{position:fixed;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(255,255,255,.02) 0 1px,transparent 1px 3px)}
+#flash{position:fixed;inset:0;background:radial-gradient(ellipse at 72% 35%,rgba(150,220,255,.35),transparent 60%);opacity:0;pointer-events:none;mix-blend-mode:screen}
+.vig{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.55) 100%),linear-gradient(180deg,rgba(0,0,0,.3),transparent 22%,transparent 72%,rgba(0,0,0,.5))}
 .win{position:fixed;background:var(--panel);border:1px solid var(--line);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
   box-shadow:0 0 22px rgba(58,209,255,.22),inset 0 0 18px rgba(58,209,255,.08);padding:12px 16px;z-index:5}
 .win:before,.win:after{content:"";position:absolute;width:14px;height:14px;border:2px solid var(--glow);filter:drop-shadow(0 0 5px var(--glow))}
 .win:before{top:-2px;left:-2px;border-right:0;border-bottom:0}.win:after{bottom:-2px;right:-2px;border-left:0;border-top:0}
 .wt{font-family:Orbitron;font-size:10px;letter-spacing:.32em;color:var(--glow);margin-bottom:8px;text-shadow:0 0 8px var(--glow);display:flex;justify-content:space-between;gap:12px}
 .wt span{color:var(--dim);letter-spacing:.1em;font-family:Rajdhani;font-size:12px;text-shadow:none}
-.status{top:16px;left:16px;display:flex;gap:16px;align-items:center;width:min(380px,calc(100vw - 32px))}
-.rk{width:58px;height:58px;flex:none;margin:8px;display:grid;place-items:center;transform:rotate(45deg);border:2px solid var(--glow);box-shadow:0 0 18px rgba(58,209,255,.7),inset 0 0 14px rgba(58,209,255,.3)}
-.rk b{transform:rotate(-45deg);font-family:Orbitron;font-weight:900;font-size:30px;color:#fff;text-shadow:0 0 12px var(--glow)}
-.rk.S{border-color:var(--gold);box-shadow:0 0 18px rgba(255,209,102,.8)}
+.status{top:16px;left:16px;display:flex;gap:16px;align-items:center;width:min(360px,calc(100vw - 32px))}
+.rk{width:56px;height:56px;flex:none;margin:8px;display:grid;place-items:center;transform:rotate(45deg);border:2px solid var(--glow);box-shadow:0 0 18px rgba(58,209,255,.7),inset 0 0 14px rgba(58,209,255,.3)}
+.rk b{transform:rotate(-45deg);font-family:Orbitron;font-weight:900;font-size:28px;color:#fff;text-shadow:0 0 12px var(--glow)}
+.rk.S{border-color:var(--gold)}
 .nm{font-family:Orbitron;font-weight:700;font-size:15px;letter-spacing:.12em;overflow-wrap:anywhere}
 .sub{color:var(--dim);font-size:14px}
 .bar{height:7px;background:rgba(255,255,255,.08);border:1px solid rgba(58,209,255,.3);margin-top:5px;overflow:hidden}
 .bar i{display:block;height:100%;background:linear-gradient(90deg,#1b7fff,var(--glow));box-shadow:0 0 10px var(--glow);transition:width 1.2s}
 .bar.gold i{background:linear-gradient(90deg,#c98b00,var(--gold));box-shadow:0 0 10px var(--gold)}
+/* clock */
+.clock{top:16px;left:50%;transform:translateX(-50%);text-align:center;padding:10px 22px 10px;min-width:280px}
+.time{font-family:Orbitron;font-weight:700;font-size:30px;letter-spacing:.08em;color:#fff;text-shadow:0 0 14px var(--glow)}
+.time small{font-size:14px;color:var(--glow);margin-left:6px}
+.date{font-size:13px;color:var(--dim);letter-spacing:.15em;text-transform:uppercase}
+.sess{margin-top:6px;font-family:Orbitron;font-size:11px;letter-spacing:.14em}
+.sess .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px;box-shadow:0 0 8px currentColor;background:currentColor}
+.cd{font-size:14px;color:var(--text);margin-top:2px}
+.mode{font-family:Orbitron;font-size:9px;letter-spacing:.14em;margin-top:6px;color:var(--gold)}
+.mode.live{color:var(--good)}
 .loot{top:16px;right:16px;width:250px}
 .lr{display:flex;justify-content:space-between;font-size:15px;padding:2px 0}.lr b{font-family:Orbitron;font-size:14px}
-.quest{left:16px;bottom:16px;width:min(330px,calc(100vw - 32px))}
+.tick{margin-top:6px;padding-top:6px;border-top:1px solid rgba(58,209,255,.25);display:flex;justify-content:space-between;align-items:baseline}
+.tick b{font-family:Orbitron;font-size:16px}
+.quest{left:16px;bottom:16px;width:min(320px,calc(100vw - 32px))}
 .ql{display:flex;justify-content:space-between;gap:10px;font-size:15px;padding:3px 0}
 .army{left:50%;bottom:16px;transform:translateX(-50%);display:flex;gap:10px;padding:10px 12px}
-.sol{width:112px;text-align:center;padding:6px 4px;border:1px solid rgba(182,147,255,.45);background:linear-gradient(180deg,rgba(182,147,255,.14),transparent);cursor:pointer}
-.sol svg{width:38px;height:38px;filter:drop-shadow(0 0 8px var(--purple))}
+.sol{width:108px;text-align:center;padding:6px 4px;border:1px solid rgba(182,147,255,.45);background:linear-gradient(180deg,rgba(182,147,255,.14),transparent);cursor:pointer}
+.sol svg{width:36px;height:36px;filter:drop-shadow(0 0 8px var(--purple))}
 .sol .sn{font-family:Orbitron;font-size:11px;letter-spacing:.18em;color:#e6dbff}
 .sol .sr{font-size:13px}
-.log{right:16px;bottom:16px;width:330px}
-.lg{display:grid;grid-template-columns:78px 44px 1fr auto;gap:6px;font-size:13.5px;padding:3px 0;border-bottom:1px solid rgba(138,166,201,.14)}
+.log{right:16px;bottom:16px;width:320px}
+.lg{display:grid;grid-template-columns:72px 42px 1fr auto;gap:6px;font-size:13.5px;padding:3px 0;border-bottom:1px solid rgba(138,166,201,.14)}
 .lg .t{color:var(--dim)}.lg .s{font-family:Orbitron;font-size:10px;color:var(--purple);align-self:center}
-.mode{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:6;font-family:Orbitron;font-size:10px;letter-spacing:.16em;padding:6px 12px;
-  border:1px solid rgba(255,209,102,.55);color:var(--gold);background:rgba(20,14,2,.55);backdrop-filter:blur(6px);white-space:nowrap}
-.mode.live{color:var(--good);border-color:rgba(61,255,176,.55);background:rgba(2,20,12,.55)}
-.nav{position:fixed;top:50px;left:50%;transform:translateX(-50%);z-index:6;font-family:Orbitron;font-size:10px;letter-spacing:.2em;color:var(--glow);text-decoration:none;opacity:.85}
-.gate{position:fixed;z-index:4;transform:translate(-50%,-50%);cursor:pointer}
+.gate{position:fixed;z-index:4;transform:translate(-50%,-50%);cursor:pointer;will-change:left,top}
 .ring{position:relative;border-radius:50%;border:2px solid var(--c);box-shadow:0 0 18px var(--c),inset 0 0 18px var(--c);animation:pulse 2.6s ease-in-out infinite;opacity:.85}
 .ring:after{content:"";position:absolute;inset:-12px;border-radius:50%;border:1px dashed var(--c);animation:spin 14s linear infinite;opacity:.6}
 @keyframes pulse{50%{transform:scale(1.08);opacity:.55}}@keyframes spin{to{transform:rotate(360deg)}}
-.tag{position:absolute;left:50%;top:calc(100% + 10px);transform:translateX(-50%);white-space:nowrap;background:rgba(4,12,28,.78);border:1px solid var(--c);
-  padding:5px 9px;font-size:13px;box-shadow:0 0 12px rgba(0,0,0,.6);backdrop-filter:blur(6px)}
+.tag{position:absolute;left:50%;top:calc(100% + 10px);transform:translateX(-50%);white-space:nowrap;background:rgba(4,12,28,.8);border:1px solid var(--c);padding:5px 9px;font-size:13px;backdrop-filter:blur(6px)}
 .tag b{font-family:Orbitron;font-size:11px;letter-spacing:.1em;color:var(--c);display:block}
 .tag .bar{width:120px;margin-top:4px}
-.new{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.5),var(--c) 30%,transparent 70%);opacity:.5;animation:pulse 2s infinite}
 .card{left:50%;top:50%;transform:translate(-50%,-50%);width:min(360px,90vw);display:none;z-index:10}
 .card.on{display:block}
 .card h3{font-family:Orbitron;font-size:16px;letter-spacing:.1em}
 .card .tg{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin:2px 0 10px}
 .card .x{position:absolute;right:12px;top:8px;cursor:pointer;color:var(--dim);font-size:22px}
 .cl{display:flex;justify-content:space-between;gap:16px;padding:5px 0;border-bottom:1px dashed rgba(138,166,201,.25);font-size:16px}
-.pop{left:50%;top:24%;transform:translate(-50%,0);text-align:center;min-width:min(500px,90vw);display:none;z-index:12;padding:18px 24px}
+.pop{left:50%;top:28%;transform:translate(-50%,0);text-align:center;min-width:min(500px,90vw);display:none;z-index:12;padding:18px 24px}
 .pop.on{display:block}.pop p{font-size:22px;font-weight:600}
-@media(max-width:1250px){.log{display:none}.army .sol{width:96px}}
-@media(max-height:700px) and (min-width:901px){.army{display:none}}
-@media(max-width:900px){
-  #bg{background-position:72% center}
-  .loot{top:112px;left:16px;right:auto;width:calc(100vw - 32px);display:grid;grid-template-columns:1fr 1fr;column-gap:14px}.loot .wt{grid-column:1/-1}
-  .army{left:16px;transform:none;bottom:126px;width:calc(100vw - 32px);justify-content:space-between}
-  .sol{flex:1;width:auto}.log{display:none}.mode{top:auto;bottom:300px;font-size:9px}.nav{top:auto;bottom:276px}
+.hint{position:fixed;right:16px;top:50%;transform:translateY(-50%);writing-mode:vertical-rl;color:rgba(226,241,255,.45);font-size:11px;letter-spacing:.3em;z-index:3;font-family:Orbitron}
+.nav{position:fixed;left:16px;top:118px;z-index:6;font-family:Orbitron;font-size:10px;letter-spacing:.2em;color:var(--glow);text-decoration:none;opacity:.85}
+@media(max-width:1250px){.log{display:none}.sol{width:92px}}
+@media(max-width:1000px){.clock{top:auto;bottom:240px}.army{display:none}}
+@media(max-width:700px){
+  .loot{top:112px;left:16px;right:auto;width:calc(100vw - 32px);display:grid;grid-template-columns:1fr 1fr;column-gap:14px}.loot .wt,.loot .tick{grid-column:1/-1}
+  .clock{bottom:132px;min-width:0;width:calc(100vw - 32px)}.time{font-size:24px}.hint{display:none}.nav{top:auto;bottom:118px;left:auto;right:16px}
   .tag{font-size:12px}.tag .bar{width:90px}
 }
 </style>
 </head>
 <body>
-<div id="bg"></div><div id="flash"></div><canvas id="fx"></canvas><div class="vig"></div><div class="scan"></div>
-<div class="mode" id="mode">[ SYSTEM LOADING ]</div>
+<canvas id="gl"></canvas><canvas id="fx"></canvas><div id="flash"></div><div class="vig"></div>
+<div class="hint">DRAG TO LOOK AROUND</div>
 <a class="nav" href="stats.html">FULL STATS ›</a>
 
 <div class="win status"><div class="rk" id="rkbox"><b id="rank">E</b></div>
   <div style="flex:1;min-width:0"><div class="nm" id="hname">HUNTER</div><div class="sub" id="title">Rank E</div>
   <div class="sub" style="color:var(--glow)">LV.<span id="lvl">1</span> <span id="xpt" style="color:var(--dim)"></span></div><div class="bar"><i id="xp"></i></div></div></div>
 
+<div class="win clock"><div class="time" id="clk">--:--:--</div><div class="date" id="dt"></div>
+  <div class="sess" id="sess"></div><div class="cd" id="cd"></div><div class="mode" id="mode">[ SYSTEM LOADING ]</div></div>
+
 <div class="win loot"><div class="wt">LOOT <span>paper farm</span></div>
   <div class="lr"><span>Payouts</span><b id="pay" style="color:var(--gold)">$0</b></div>
   <div class="lr"><span>Eval fees</span><b id="fees">$0</b></div>
   <div class="lr"><span>Net</span><b id="net">$0</b></div>
-  <div class="lr"><span>Cleared / dead</span><b><span id="gc" style="color:var(--good)">0</span> / <span id="gd" style="color:var(--bad)">0</span></b></div></div>
+  <div class="lr"><span>Cleared / dead</span><b><span id="gc" style="color:var(--good)">0</span> / <span id="gd" style="color:var(--bad)">0</span></b></div>
+  <div class="tick"><span class="sub">NQ <span id="qat"></span></span><b id="qpx">-</b><b id="qch" style="font-size:13px">-</b></div></div>
 
 <div class="win quest"><div class="wt">DAILY QUEST <span>resets 6 PM ET</span></div>
   <div class="ql"><span>Hold the line (loss &lt; $<span id="lim">500</span>)</span><b id="qs">CLEAR</b></div>
@@ -105,47 +114,181 @@ html,body{height:100%;overflow:hidden;background:#02040a;color:var(--text);font-
 const $ = id => document.getElementById(id);
 const money = v => (v < 0 ? "-$" : "$") + Math.abs(Math.round(v)).toLocaleString();
 const TITLES = {E:"The Weakest Hunter", D:"Awakened", C:"Dungeon Regular", B:"Gate Breaker", A:"Elite Hunter", S:"Shadow Monarch"};
-// portal spots on the painting (fractions of the 2560x1440 image): the 4 painted gates first, then empty sky
+const IMG = [2560, 1440], ZOOM = 1.14;
 const SPOTS = [[.735,.43,150],[.123,.49,95],[.473,.42,60],[.913,.56,60],[.30,.17,60],[.58,.12,55],[.90,.20,55],[.12,.16,50]];
-const IMG = [2560, 1440];
-function toScreen(fx, fy) {          // image fraction -> screen px (background-size: cover on a box 3% bigger than the screen)
-  const W = innerWidth * 1.06, H = innerHeight * 1.06, s = Math.max(W / IMG[0], H / IMG[1]), dw = IMG[0] * s, dh = IMG[1] * s;
-  return [(W - dw) * (innerWidth <= 900 ? .72 : .5) + fx * dw - innerWidth * .03, (H - dh) * .5 + fy * dh - innerHeight * .03, s];
+
+// ---------- New York clock + time-of-day blend
+const NY = new Intl.DateTimeFormat("en-US", {timeZone:"America/New_York", hour:"numeric", minute:"2-digit", second:"2-digit", hour12:true});
+const NYP = new Intl.DateTimeFormat("en-US", {timeZone:"America/New_York", weekday:"short", year:"numeric", month:"short", day:"numeric", hour:"numeric", minute:"numeric", second:"numeric", hour12:false});
+function nyNow() { const p = Object.fromEntries(NYP.formatToParts(new Date()).map(x => [x.type, x.value]));
+  return {wd: p.weekday, h: +p.hour % 24, m: +p.minute, s: +p.second, label: `${p.weekday} ${p.month} ${p.day}, ${p.year}`}; }
+const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+function todWeights(h) {   // h = hours (float). returns [night, sunset, day]
+  let night = 0, sun = 0, day = 0;
+  if (h < 5.5 || h >= 20) night = 1;
+  else if (h < 6.4) { const t = smooth(5.5, 6.4, h); night = 1 - t; sun = t; }
+  else if (h < 7.6) { const t = smooth(6.4, 7.6, h); sun = 1 - t; day = t; }
+  else if (h < 17.4) day = 1;
+  else if (h < 18.6) { const t = smooth(17.4, 18.6, h); day = 1 - t; sun = t; }
+  else { const t = smooth(18.6, 20, h); sun = 1 - t; night = t; }
+  return [night, sun, day];
 }
+const pad = n => String(n).padStart(2, "0");
+function dur(min) { const h = Math.floor(min / 60), m = Math.round(min % 60); return h ? `${h}h ${pad(m)}m` : `${m}m`; }
+function session(t) {   // CME NQ hours, ET
+  const mins = t.h * 60 + t.m, wd = t.wd;
+  const weekendClosed = wd === "Sat" || (wd === "Fri" && mins >= 1020) || (wd === "Sun" && mins < 1080);
+  const toOpen = () => { const days = {Fri: 3, Sat: 2, Sun: 1}[wd] || 1; return mins < 570 && !["Sat", "Sun"].includes(wd) ? 570 - mins : (days * 1440 - mins + 570) - (wd === "Fri" && mins < 570 ? 2 * 1440 : 0); };
+  if (weekendClosed) return ["MARKET CLOSED • WEEKEND", "#ff4d6d", `Futures reopen Sun 6:00 PM • NY open in ${dur(toOpen())}`];
+  if (mins >= 1020 && mins < 1080) return ["DAILY BREAK", "#ff4d6d", `Reopens 6:00 PM • NY open in ${dur(toOpen())}`];
+  if (mins >= 570 && mins < 960) return ["NY SESSION LIVE", "#3dffb0", `Close in ${dur(960 - mins)}`];
+  if (mins >= 960 && mins < 1020) return ["AFTER HOURS", "#ffd166", `Break in ${dur(1020 - mins)} • NY open in ${dur(toOpen())}`];
+  if (mins >= 180 && mins < 570) return [mins < 480 ? "LONDON SESSION" : "PRE-MARKET", "#3ad1ff", `NY open in ${dur(570 - mins)}`];
+  return ["ASIA SESSION", "#b693ff", `NY open in ${dur(toOpen())}`];
+}
+function tickClock() {
+  const t = nyNow(); $("clk").innerHTML = NY.format(new Date()).replace(/ (AM|PM)/, '<small>$1 ET</small>'); $("dt").textContent = t.label;
+  const [txt, col, cd] = session(t); $("sess").innerHTML = `<span style="color:${col}"><span class="dot"></span>${txt}</span>`; $("cd").textContent = cd;
+}
+tickClock(); setInterval(tickClock, 1000);
+
+// ---------- depth (same formula used by the shader and by the gate tags)
+function depth(x, y) {
+  let d = smooth(.42, 1, y) * .7;
+  d = Math.max(d, smooth(.70, .78, y) * (1 - smooth(.38, .48, x)));
+  d = Math.max(d, .8 * smooth(.932, .95, x) * smooth(.30, .36, y));
+  d = Math.max(d, .32 * smooth(.63, .66, x) * (1 - smooth(.83, .86, x)) * (1 - smooth(.74, .80, y)));
+  return d;
+}
+
+// ---------- WebGL painting with parallax + day/night blend + fog + gate glow
+const cvs = $("gl"), gl = cvs.getContext("webgl", {antialias: false, premultipliedAlpha: false});
+const VS = `attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}`;
+const FS = `precision highp float;
+uniform sampler2D tN,tS,tD;uniform vec3 w;uniform vec2 off,res;uniform float time,cx,zoom,night;
+float sm(float a,float b,float x){return smoothstep(a,b,x);}
+float depth(vec2 u){float d=sm(.42,1.,u.y)*.7;d=max(d,sm(.70,.78,u.y)*(1.-sm(.38,.48,u.x)));d=max(d,.8*sm(.932,.95,u.x)*sm(.30,.36,u.y));
+  d=max(d,.32*sm(.63,.66,u.x)*(1.-sm(.83,.86,u.x))*(1.-sm(.74,.80,u.y)));return d;}
+float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);}
+float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<5;i++){v+=a*n(p);p*=2.;a*=.5;}return v;}
+void main(){
+  vec2 sc=vec2(gl_FragCoord.x,res.y-gl_FragCoord.y);
+  float s=max(res.x/2560.,res.y/1440.)*zoom;vec2 dim=vec2(2560.,1440.)*s;vec2 lt=vec2((res.x-dim.x)*cx,(res.y-dim.y)*.5);
+  vec2 u=(sc-lt)/dim;
+  float d=depth(u);
+  u+=off*(.022+d*.05)*vec2(1.,.55);
+  u=clamp(u,.001,.999);
+  vec3 c=texture2D(tN,u).rgb*w.x+texture2D(tS,u).rgb*w.y+texture2D(tD,u).rgb*w.z;
+  float fogm=sm(.5,.95,u.y)*(1.-sm(.97,1.,u.y));
+  float f=fbm(vec2(u.x*3.+time*.02,u.y*6.-time*.01))*fbm(vec2(u.x*5.-time*.015,u.y*4.));
+  vec3 fogc=mix(vec3(.95,.97,1.),vec3(.55,.35,.9),night);
+  c=mix(c,fogc,clamp(f*1.6*fogm*(.25+.25*night),0.,.45));
+  vec2 g=vec2(.735,.40);float gd=length((u-g)*vec2(1.6,1.));
+  float pulse=.55+.45*sin(time*2.1)+.15*sin(time*7.3);
+  c+=vec3(.25,.75,1.)*exp(-gd*9.)*pulse*(.35+.45*night);
+  c+=vec3(.25,.6,1.)*exp(-length((u-vec2(.123,.49))*vec2(1.,1.))*22.)*pulse*.4*(.4+.6*night);
+  gl_FragColor=vec4(c,1.);
+}`;
+function sh(t, src) { const o = gl.createShader(t); gl.shaderSource(o, src); gl.compileShader(o); if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(o)); return o; }
+const prog = gl.createProgram(); gl.attachShader(prog, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FS)); gl.linkProgram(prog); gl.useProgram(prog);
+const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+const loc = gl.getAttribLocation(prog, "p"); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+const U = n => gl.getUniformLocation(prog, n);
+let loaded = 0;
+function tex(unit, url, name) {
+  const t = gl.createTexture(); gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, t);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([4, 8, 20, 255]));
+  const im = new Image(); im.onload = () => { gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, t);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, im);
+    [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T].forEach(k => gl.texParameteri(gl.TEXTURE_2D, k, gl.CLAMP_TO_EDGE));
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); loaded++; }; im.src = url;
+  gl.uniform1i(U(name), unit);
+}
+tex(0, "art/hunter-bg-night.jpg", "tN"); tex(1, "art/hunter-bg-sunset.jpg", "tS"); tex(2, "art/hunter-bg-day.jpg", "tD");
+const cxFrac = () => innerWidth <= 700 ? .72 : .5;
+function resize() { const r = Math.min(devicePixelRatio, 1.75); cvs.width = innerWidth * r; cvs.height = innerHeight * r; gl.viewport(0, 0, cvs.width, cvs.height); }
+resize(); addEventListener("resize", resize);
+
+// ---------- drag to look around
+let off = [0, 0], tgt = [0, 0], dragging = false, last = null, idle = 0;
+cvs.addEventListener("pointerdown", e => { dragging = true; last = [e.clientX, e.clientY]; cvs.classList.add("drag"); cvs.setPointerCapture(e.pointerId); $("card").classList.remove("on"); });
+cvs.addEventListener("pointermove", e => { if (!dragging) return; const dx = (e.clientX - last[0]) / innerWidth, dy = (e.clientY - last[1]) / innerHeight; last = [e.clientX, e.clientY];
+  tgt[0] = Math.max(-1, Math.min(1, tgt[0] - dx * 3)); tgt[1] = Math.max(-1, Math.min(1, tgt[1] - dy * 3)); idle = 0; });
+const up = () => { dragging = false; cvs.classList.remove("drag"); }; cvs.addEventListener("pointerup", up); cvs.addEventListener("pointercancel", up);
+
+function imgToScreen(fx, fy) {   // inverse of the shader mapping, incl. parallax shift
+  const W = innerWidth, H = innerHeight, s = Math.max(W / IMG[0], H / IMG[1]) * ZOOM, dw = IMG[0] * s, dh = IMG[1] * s, d = depth(fx, fy);
+  const ux = fx - off[0] * (.022 + d * .05), uy = fy - off[1] * (.022 + d * .05) * .55;
+  return [(W - dw) * cxFrac() + ux * dw, (H - dh) * .5 + uy * dh, s];
+}
+
+// ---------- particles, shooting stars, lightning
+const fx = $("fx"), cx = fx.getContext("2d"); const P = [], STARS = [];
+function fxSize() { fx.width = innerWidth * devicePixelRatio; fx.height = innerHeight * devicePixelRatio; cx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0); }
+fxSize(); addEventListener("resize", fxSize);
+for (let i = 0; i < 90; i++) P.push({x: Math.random() * innerWidth, y: Math.random() * innerHeight, v: .2 + Math.random() * .6, r: .6 + Math.random() * 1.8, p: Math.random() > .75, z: Math.random()});
+let W3 = [1, 0, 0], tStart = performance.now();
+function frame(now) {
+  const t = nyNow(); W3 = todWeights(t.h + t.m / 60 + t.s / 3600); const night = W3[0] + W3[1] * .5;
+  idle += 1 / 60; if (!dragging && idle > 2.5) { tgt[0] *= .985; tgt[1] *= .985; }
+  const sway = dragging ? 0 : Math.sin(now / 9000) * .12;
+  off[0] += (tgt[0] + sway - off[0]) * .08; off[1] += (tgt[1] - off[1]) * .08;
+  gl.uniform3f(U("w"), W3[0], W3[1], W3[2]); gl.uniform2f(U("off"), off[0], off[1]); gl.uniform2f(U("res"), cvs.width, cvs.height);
+  gl.uniform1f(U("time"), (now - tStart) / 1000); gl.uniform1f(U("cx"), cxFrac()); gl.uniform1f(U("zoom"), ZOOM); gl.uniform1f(U("night"), night);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  cx.clearRect(0, 0, innerWidth, innerHeight);
+  for (const q of P) { q.y -= q.v; q.x += Math.sin(q.y / 40) * .2; if (q.y < -5) { q.y = innerHeight + 5; q.x = Math.random() * innerWidth; }
+    const px = q.x - off[0] * innerWidth * .03 * (.5 + q.z), py = q.y - off[1] * innerHeight * .02 * (.5 + q.z);
+    cx.globalAlpha = .35 + night * .55; cx.beginPath(); cx.arc(px, py, q.r, 0, 7); cx.fillStyle = q.p ? "#b693ff" : "#5ad2ff"; cx.shadowBlur = 8; cx.shadowColor = cx.fillStyle; cx.fill(); }
+  if (W3[0] > .5 && Math.random() < .004) STARS.push({x: Math.random() * innerWidth * .8, y: Math.random() * innerHeight * .3, l: 0});
+  for (let i = STARS.length - 1; i >= 0; i--) { const s = STARS[i]; s.l += 1; const len = 90, a = 1 - s.l / 45;
+    if (a <= 0) { STARS.splice(i, 1); continue; } const x = s.x + s.l * 9, y = s.y + s.l * 4;
+    const g = cx.createLinearGradient(x, y, x - len, y - len * .45); g.addColorStop(0, `rgba(255,255,255,${a})`); g.addColorStop(1, "rgba(255,255,255,0)");
+    cx.globalAlpha = 1; cx.shadowBlur = 0; cx.strokeStyle = g; cx.lineWidth = 2; cx.beginPath(); cx.moveTo(x, y); cx.lineTo(x - len, y - len * .45); cx.stroke(); }
+  cx.globalAlpha = 1;
+  placeGates();
+  requestAnimationFrame(frame);
+}
+(function strike() { if (W3[0] + W3[1] > .4) $("flash").animate([{opacity: 0}, {opacity: 1}, {opacity: .2}, {opacity: .8}, {opacity: 0}], {duration: 700}); setTimeout(strike, 6000 + Math.random() * 9000); })();
+
+// ---------- data
 const SVG = {
   ORB:'<svg viewBox="0 0 64 64"><path d="M32 4l9 10-4 7h6l-6 23 6 16H21l6-16-6-23h6l-4-7z" fill="#1a1030" stroke="#c9b3ff" stroke-width="2"/><circle cx="28" cy="15" r="1.8" fill="#7df9ff"/><circle cx="36" cy="15" r="1.8" fill="#7df9ff"/></svg>',
   ASIA:'<svg viewBox="0 0 64 64"><path d="M32 6c10 6 16 16 16 26 0 12-7 22-16 26-9-4-16-14-16-26C16 22 22 12 32 6z" fill="#1a1030" stroke="#c9b3ff" stroke-width="2"/><circle cx="27" cy="27" r="2" fill="#7df9ff"/><circle cx="37" cy="27" r="2" fill="#7df9ff"/></svg>',
   VWAP:'<svg viewBox="0 0 64 64"><rect x="14" y="12" width="36" height="44" rx="6" fill="#1a1030" stroke="#c9b3ff" stroke-width="2"/><circle cx="26" cy="31" r="2.2" fill="#7df9ff"/><circle cx="38" cy="31" r="2.2" fill="#7df9ff"/><path d="M24 44h16" stroke="#c9b3ff" stroke-width="3"/></svg>'};
-let D = null;
+let D = null, gateEls = [];
 const L = (a, b, c) => `<div class="cl"><span>${a}</span><b style="color:${c || "inherit"}">${b}</b></div>`;
 function card(t, tag, body) { $("ch").textContent = t; $("ct").textContent = tag; $("cb").innerHTML = body; $("card").classList.add("on"); }
 $("cx").onclick = () => $("card").classList.remove("on");
-function placeGates() {
-  if (!D) return;
+function buildGates() {
   const live = D.gates.filter(g => g.status !== "blown").slice(-SPOTS.length);
-  live.sort((a, b) => (b.stage === "funded") - (a.stage === "funded") || b.pct - a.pct);     // best account takes the big gate
-  $("gates").innerHTML = "";
+  live.sort((a, b) => (b.stage === "funded") - (a.stage === "funded") || b.pct - a.pct);
+  $("gates").innerHTML = ""; gateEls = [];
   live.forEach((g, i) => {
-    const [fx, fy, size] = SPOTS[i], [x, y, s] = toScreen(fx, fy), r = Math.max(28, size * s * 2.2);
     const c = g.stage === "funded" ? "var(--gold)" : "var(--glow)";
-    const el = document.createElement("div"); el.className = "gate"; el.style.cssText = `left:${x}px;top:${y}px;--c:${c}`;
-    el.innerHTML = `<div class="ring" style="width:${r}px;height:${r * (i === 0 ? 1.7 : 1)}px">${i > 3 ? '<div class="new"></div>' : ""}</div>
-      <div class="tag"><b>${g.name}</b>${g.stage === "funded" ? "CLEARED • FUNDED" : Math.round(g.pct) + "% to target"}
+    const el = document.createElement("div"); el.className = "gate"; el.style.setProperty("--c", c);
+    el.innerHTML = `<div class="ring"></div><div class="tag"><b>${g.name}</b>${g.stage === "funded" ? "CLEARED • FUNDED" : Math.round(g.pct) + "% to target"}
       <div class="bar ${g.stage === "funded" ? "gold" : ""}"><i style="width:${g.pct}%"></i></div></div>`;
     el.onclick = () => card(g.name, g.stage === "funded" ? "Cleared gate • funded account" : "Active dungeon • evaluation",
-      L("Lane / risk", `${g.lane} • $${g.risk}`) + L(g.stage === "funded" ? "Payout progress" : "Progress", g.goal) +
-      L("Room before death", money(g.room), g.danger > 60 ? "var(--bad)" : "var(--good)"));
-    $("gates").appendChild(el);
+      L("Lane / risk", `${g.lane} • $${g.risk}`) + L(g.stage === "funded" ? "Payout progress" : "Progress", g.goal) + L("Room before death", money(g.room), g.danger > 60 ? "var(--bad)" : "var(--good)"));
+    $("gates").appendChild(el); gateEls.push([el, i]);
   });
 }
+function placeGates() {
+  for (const [el, i] of gateEls) { const [fx_, fy, size] = SPOTS[i], [x, y, s] = imgToScreen(fx_, fy), r = Math.max(28, size * s * 2.2);
+    el.style.left = x + "px"; el.style.top = y + "px"; const ring = el.firstChild; ring.style.width = r + "px"; ring.style.height = r * (i === 0 ? 1.7 : 1) + "px"; }
+}
 function render(d) {
-  D = d;
+  const first = !D; D = d;
   const live = d.mode.startsWith("LIVE"); $("mode").textContent = (live ? "● " : "") + d.mode; $("mode").className = "mode" + (live ? " live" : "");
   const h = d.hunter; $("rank").textContent = h.rank; $("rkbox").className = "rk " + h.rank; $("hname").textContent = h.name;
   $("title").textContent = `Rank ${h.rank} • ${TITLES[h.rank]}`; $("lvl").textContent = h.level; $("xpt").textContent = `${h.xp - h.xp_lo}/${h.xp_hi - h.xp_lo} XP`;
   $("xp").style.width = Math.min(100, (h.xp - h.xp_lo) / (h.xp_hi - h.xp_lo) * 100) + "%";
   const l = d.loot; $("pay").textContent = money(l.payouts); $("fees").textContent = money(l.fees);
   $("net").textContent = money(l.net); $("net").style.color = l.net >= 0 ? "var(--good)" : "var(--bad)"; $("gc").textContent = l.passed; $("gd").textContent = l.blown;
+  if (d.quote && d.quote.price) { $("qpx").textContent = d.quote.price.toLocaleString(undefined, {minimumFractionDigits: 2});
+    const c = d.quote.chg || 0; $("qch").textContent = (c >= 0 ? "▲ +" : "▼ ") + c.toFixed(2); $("qch").style.color = c >= 0 ? "var(--good)" : "var(--bad)"; $("qat").textContent = d.quote.at ? "• " + d.quote.at : ""; }
   const q = d.quest; $("lim").textContent = q.limit; $("qs").textContent = q.held ? "CLEAR" : "FAILED"; $("qs").style.color = q.held ? "var(--good)" : "var(--bad)";
   $("qp").textContent = money(q.pnl); $("qp").style.color = q.pnl >= 0 ? "var(--good)" : "var(--bad)"; $("qt").textContent = `${q.trades} / ${q.open}`;
   $("army").innerHTML = d.shadows.map((s, i) => `<div class="sol" data-i="${i}">${SVG[s.key]}<div class="sn">${s.name}</div>
@@ -155,26 +298,15 @@ function render(d) {
   $("log").innerHTML = d.log.slice(0, 6).map(r => `<div class="lg"><span class="t">${r.time.replace(/^\w+ /, "")}</span><span class="s">${r.strat}</span>
     <span>${r.side === "LONG" ? "▲" : "▼"} ${r.text.split(" (")[0]}</span><b style="color:${r.pnl == null ? "var(--gold)" : r.pnl >= 0 ? "var(--good)" : "var(--bad)"}">${r.pnl == null ? "OPEN" : money(r.pnl)}</b></div>`).join("")
     || '<div class="sub">No battles yet.</div>';
-  placeGates();
+  buildGates();
   const seen = (k, v) => { try { const o = localStorage.getItem(k); localStorage.setItem(k, v); return o; } catch (e) { return null; } };
   const ol = seen("a_lvl", h.level), op = seen("a_passed", l.passed), ob = seen("a_blown", l.blown);
   const msg = (op !== null && +op < l.passed) ? "Gate cleared. An account is now FUNDED." : (ol !== null && +ol < h.level) ? `LEVEL UP! You are now level ${h.level}.`
     : (ob !== null && +ob < l.blown) ? "A gate collapsed. The System opened a new one." : null;
-  if (msg) { $("popm").textContent = msg; $("pop").classList.add("on"); setTimeout(() => $("pop").classList.remove("on"), 4500); }
+  if (msg && !first) { $("popm").textContent = msg; $("pop").classList.add("on"); setTimeout(() => $("pop").classList.remove("on"), 4500); }
 }
 async function load() { try { render(await (await fetch("data.json?t=" + Date.now())).json()); } catch (e) { $("mode").textContent = "OFFLINE: is the farm running?"; } }
-addEventListener("resize", placeGates);
-const cv = $("fx"), cx = cv.getContext("2d"), P = [];
-function size() { cv.width = innerWidth * devicePixelRatio; cv.height = innerHeight * devicePixelRatio; cx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0); }
-size(); addEventListener("resize", size);
-for (let i = 0; i < 90; i++) P.push({x: Math.random() * innerWidth, y: Math.random() * innerHeight, v: .2 + Math.random() * .6, r: .6 + Math.random() * 1.8, p: Math.random() > .75});
-(function tick() {
-  cx.clearRect(0, 0, innerWidth, innerHeight);
-  for (const q of P) { q.y -= q.v; q.x += Math.sin(q.y / 40) * .2; if (q.y < -5) { q.y = innerHeight + 5; q.x = Math.random() * innerWidth; }
-    cx.beginPath(); cx.arc(q.x, q.y, q.r, 0, 7); cx.fillStyle = q.p ? "rgba(182,147,255,.7)" : "rgba(90,210,255,.75)"; cx.shadowBlur = 8; cx.shadowColor = cx.fillStyle; cx.fill(); }
-  requestAnimationFrame(tick);
-})();
-(function strike() { $("flash").animate([{opacity: 0}, {opacity: 1}, {opacity: .2}, {opacity: .8}, {opacity: 0}], {duration: 700}); setTimeout(strike, 6000 + Math.random() * 9000); })();
+requestAnimationFrame(frame);
 (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => { load(); setInterval(load, 30000); });
 </script>
 </body>

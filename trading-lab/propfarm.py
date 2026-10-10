@@ -371,6 +371,7 @@ def tg_listener(get_state):
 
 # ---------------------------------------------------------------- HUNTER SYSTEM dashboard (Solo Leveling style) -> dashboard\data.json
 DASH = os.path.join(HERE, "dashboard")
+QUOTE = {}                                           # last NQ price for the dashboard ticker
 RANKS = [("E", 0), ("D", 1000), ("C", 3000), ("B", 7500), ("A", 15000), ("S", 25000)]
 DAILY_LOSS_LIMIT = 500
 
@@ -415,7 +416,7 @@ def dashboard_data(trades, start, mode):
         log.append(dict(time=f"{(t['exit_ts'] or t['entry_ts']):%a %I:%M %p}", strat=t["strat"], side="LONG" if t["side"] > 0 else "SHORT",
                         text=(f"{t['entry']:.2f} → {t['exit']:.2f} ({t['pts']:+.1f} pts)" if t["closed"] else f"OPEN @ {t['entry']:.2f}, stop {t['stop']:.2f}"),
                         pnl=round(p) if t["closed"] else None, you=dec.get(t["id"], "")))
-    return dict(mode=mode, updated=f"{pd.Timestamp.now(tz=TZ):%a %b %d %I:%M %p} ET",
+    return dict(mode=mode, quote=QUOTE, updated=f"{pd.Timestamp.now(tz=TZ):%a %b %d %I:%M %p} ET",
                 hunter=dict(name="MOSESGOTWATER", rank=rank, level=level, xp=xp, xp_lo=lo, xp_hi=hi,
                             next_rank=nxt[0] if nxt else None, next_need=round(nxt[1] - led["payouts"]) if nxt else 0),
                 quest=dict(pnl=round(today_pnl), limit=DAILY_LOSS_LIMIT, trades=len(tt), open=len(open_now),
@@ -465,6 +466,12 @@ def loop():
         try:
             if not market_closed(now) or shared["trades"] is None:
                 m1, m5 = fetch()
+                try:
+                    rth_ = m1[(m1.index.hour * 60 + m1.index.minute >= 570) & (m1.index.hour * 60 + m1.index.minute < 960)]
+                    prev = rth_[rth_.index.date < m1.index[-1].date()]
+                    pc = float(prev.Close.iloc[-1]) if len(prev) else float(m1.Close.iloc[0])
+                    QUOTE.update(price=round(float(m1.Close.iloc[-1]), 2), chg=round(float(m1.Close.iloc[-1]) - pc, 2), at=f"{m1.index[-1]:%I:%M %p}")
+                except Exception: pass
                 trades = all_trades(m1, m5); shared["trades"] = trades
                 start = pd.Timestamp(state["start"])
                 for t in trades:
@@ -503,7 +510,7 @@ if __name__ == "__main__":
         st = {"start": str(trades[0]["entry_ts"]) if trades else pd.Timestamp.now(tz=TZ).isoformat()}
         print("\n" + report_text(trades, st))
     elif sys.argv[1:] == ["dash"]:
-        m1, m5 = fetch(); write_dashboard(all_trades(m1, m5), load_state()); print(open(os.path.join(DASH, "data.json"), encoding="utf-8").read()[:1500])
+        m1, m5 = fetch(); QUOTE.update(price=round(float(m1.Close.iloc[-1]), 2), chg=0.0, at=f"{m1.index[-1]:%I:%M %p}"); write_dashboard(all_trades(m1, m5), load_state()); print(open(os.path.join(DASH, "data.json"), encoding="utf-8").read()[:1500])
     elif sys.argv[1:] == ["report"]:
         m1, m5 = fetch(); trades = all_trades(m1, m5); txt = report_text(trades, load_state())
         tg("sendMessage", json={"chat_id": TG_CHAT, "text": txt}); dc_post("daily-report", embed={"title": "🌾 The farm at the close", "description": txt[:4000], "color": 0xf1c40f})
