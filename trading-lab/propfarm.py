@@ -88,42 +88,32 @@ def run_exit(m1, i, side, entry, stop, tgt, end_i):
     return float(m1.Close.values[-1]), len(m1) - 1, False                     # still open
 
 
-def strat_orb(m1, atr):
+def strat_orb(m1, atr, stop_k=0.15):
+    """9:30 ORB on 1-MINUTE bars: first 1-min break of the 9:30-9:35 range, stop = 15% of 14-day ATR, hold to 4 PM.
+    (2026-10-10: the old 5-min version ignored stop wicks inside the entry bar and overstated the edge.)"""
     out = []
     t = m1.index; tod = t.hour * 60 + t.minute
     r = m1[(tod >= 570) & (tod < 960)]
     for day, d1 in r.groupby(r.index.date):
-        d = d1.resample("5min").agg({"Open": "first", "High": "max", "Low": "min", "Close": "last"}).dropna()
         a = atr_for(atr, day)
-        if len(d) < 2 or np.isnan(a): continue
-        f = d.iloc[0]
-        side = 0
-        for k in range(1, min(len(d), 72)):
-            b = d.iloc[k]
-            if b.High > f.High and b.Low < f.Low: break
-            if b.High > f.High: side, entry, k0 = 1, max(f.High + TICK, b.Open), k; break
-            if b.Low < f.Low: side, entry, k0 = -1, min(f.Low - TICK, b.Open), k; break
+        if len(d1) < 6 or np.isnan(a): continue
+        orh, orl = d1.High.values[:5].max(), d1.Low.values[:5].min()
+        H, L, O = d1.High.values, d1.Low.values, d1.Open.values
+        side, j0 = 0, -1
+        for j in range(5, min(len(d1), 360)):
+            up, dn = H[j] > orh, L[j] < orl
+            if up and dn: break
+            if up or dn: side, j0 = (1 if up else -1), j; break
         if not side: continue
-        stop = entry - side * 0.10 * a
+        entry = max(orh + TICK, O[j0]) if side > 0 else min(orl - TICK, O[j0])
+        stop = entry - side * stop_k * a
         if (entry - stop) * side < 8 * TICK: continue
-        bar_start = d.index[k0]
-        mins = d1[(d1.index >= bar_start) & (d1.index < bar_start + pd.Timedelta(minutes=5))]
-        hit = mins[(mins.High > f.High)] if side > 0 else mins[(mins.Low < f.Low)]
-        ets = hit.index[0] if len(hit) else bar_start
-        # exit on 5-min bars like the backtest: entry bar counts only a CLOSE beyond the stop, then hold to close
-        ex, xts, closed = None, None, False
-        for j in range(k0, len(d)):
-            b = d.iloc[j]
-            if j > k0 and ((b.Low <= stop) if side > 0 else (b.High >= stop)): ex, xts = stop, d.index[j]; break
-            if j == k0 and ((b.Close <= stop) if side > 0 else (b.Close >= stop)): ex, xts = stop, d.index[j] + pd.Timedelta(minutes=4); break
-        if ex is None:
-            if d.index[-1].hour * 60 + d.index[-1].minute >= 955:
-                ex, xts = float(d.iloc[-1].Close), d.index[-1] + pd.Timedelta(minutes=4)
-            else:
-                ex, xts = float(d.iloc[-1].Close), None
-        closed = xts is not None
-        out.append(dict(strat="ORB", entry_ts=ets, side=side, entry=float(entry), stop=float(stop), target=None,
-                        exit=float(ex), exit_ts=xts, closed=closed, rule="hold to 4 PM"))
+        gi = m1.index.get_loc(d1.index[j0])
+        last = m1.index.get_loc(d1.index[-1])
+        flat_done = d1.index[-1].hour * 60 + d1.index[-1].minute >= 959
+        ex, xi, closed = run_exit(m1, gi, side, float(entry), float(stop), None, last if flat_done else 10 ** 9)
+        out.append(dict(strat="ORB", entry_ts=d1.index[j0], side=side, entry=float(entry), stop=float(stop), target=None,
+                        exit=float(ex), exit_ts=m1.index[xi] if closed else None, closed=closed, rule="hold to 4 PM"))
     return out
 
 
