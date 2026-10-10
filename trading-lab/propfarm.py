@@ -13,12 +13,15 @@ import numpy as np, pandas as pd, requests
 HERE = os.path.dirname(os.path.abspath(__file__))
 TZ = "America/New_York"
 PV, TICK, FEE = 2.0, 0.25, 0.62                     # MNQ
+INST = {"NQ": dict(pv=2.0, tick=0.25, fee=0.62, label="MNQ", yahoo="NQ=F"),
+        "GC": dict(pv=10.0, tick=0.10, fee=0.82, label="MGC", yahoo="GC=F")}   # gold lane = micro gold
 STATE = os.path.join(HERE, "propfarm_state.json")
 DECISIONS = os.path.join(HERE, "tg_decisions.csv")
 EVAL_FEE = 85                                       # what Moses pays per Topstep 50K eval
 RULES = dict(start=50000, target=3000, dd=2000, consist=0.50, min_days=2, lock=50000,
              pay_days=5, pay_min_day=150, pay_frac=0.50, pay_cap=5000, split=0.90)
-TIERS = {"A": 200, "B": 400}                        # $ risk per trade for each farm lane
+TIERS = {"A": 200, "B": 400, "G": 200}              # $ risk per trade for each farm lane
+LANE_SYM = {"A": "NQ", "B": "NQ", "G": "GC"}          # lanes A/B trade NQ, lane G trades gold
 
 TG_TOKEN = open(os.path.join(HERE, "telegram_token.txt")).read().strip()
 TG_CHAT = open(os.path.join(HERE, "telegram_chat_id.txt")).read().strip()
@@ -29,10 +32,10 @@ DC = "https://discord.com/api/v10"
 
 
 # ---------------------------------------------------------------- data
-def fetch():
+def fetch(ticker="NQ=F"):
     import yfinance as yf
-    m1 = yf.download("NQ=F", period="7d", interval="1m", progress=False, auto_adjust=False)
-    m5 = yf.download("NQ=F", period="60d", interval="5m", progress=False, auto_adjust=False)
+    m1 = yf.download(ticker, period="7d", interval="1m", progress=False, auto_adjust=False)
+    m5 = yf.download(ticker, period="60d", interval="5m", progress=False, auto_adjust=False)
     out = []
     for d in (m1, m5):
         d.columns = [c[0] if isinstance(c, tuple) else c for c in d.columns]
@@ -190,10 +193,56 @@ def strat_vwap(m1, atr):
     return out
 
 
-def all_trades(m1, m5):
+def _lab_style(m1, atr, b, sides, window, stop_fn, tgt_mult, flat_fn, strat, rule, bar_min):
+    """generic: signal on bar close -> enter next 1-min open; max 2/day, no overlap (same as lab.py)"""
+    out = []; idx_ns = m1.index.asi8; last_exit, cur_day, cnt = -1, None, 0
+    for ts in b.index[(sides != 0).values]:
+        ct = ts + pd.Timedelta(minutes=bar_min)
+        todc = (ct.hour * 60 + ct.minute) % 1440
+        if not window(todc): continue
+        i = int(np.searchsorted(idx_ns, ct.value))
+        if i >= len(m1) or (m1.index[i] - ct) > pd.Timedelta(minutes=5): continue
+        side = int(sides[ts]); td = tday(ts)
+        if i <= last_exit or (td == cur_day and cnt >= 2): continue
+        sd = stop_fn(td)
+        if not sd or np.isnan(sd): continue
+        e = float(m1.Open.values[i])
+        flat = flat_fn(ct, todc)
+        end_i = int(np.searchsorted(idx_ns, flat.value, side="right")) - 1 if flat <= m1.index[-1] else 10 ** 9
+        tgt = e + side * tgt_mult * sd if tgt_mult else None
+        ex, xi, closed = run_exit(m1, i, side, e, e - side * sd, tgt, end_i)
+        out.append(dict(strat=strat, entry_ts=m1.index[i], side=side, entry=e, stop=e - side * sd, target=tgt,
+                        exit=ex, exit_ts=m1.index[xi] if closed else None, closed=closed, rule=rule))
+        last_exit = xi if closed else 10 ** 9
+        if td != cur_day: cur_day, cnt = td, 0
+        cnt += 1
+    return out
+
+
+def strat_gc_asia(m1, atr):
+    """GOLD: 60-min Donchian-55 breakout in the Asia session (go WITH the Asia move), stop 10% ATR, hold to 2:55 AM"""
+    b = bars(m1, 60, offset="30min")
+    hi, lo = b.High.shift().rolling(55).max(), b.Low.shift().rolling(55).min()
+    sides = pd.Series(np.where(b.Close > hi, 1, np.where(b.Close < lo, -1, 0)), index=b.index)
+    return _lab_style(m1, atr, b, sides, lambda x: x >= 1140 or x <= 120, lambda td: 0.10 * atr_for(atr, td), None,
+                      lambda ct, x: ct.normalize() + pd.Timedelta(days=1 if x >= 1140 else 0, minutes=175), "G_ASIA", "hold to 2:55 AM", 60)
+
+
+def strat_gc_spike(m1, atr):
+    """GOLD: fade a 5-min volume spike (3x volume, 1.5x range) between 10:00 and 12:00 ET, $8 stop, hold to 3:55 PM"""
+    b = bars(m1, 5)
+    va, rg = b.Volume.rolling(20).mean(), (b.High - b.Low)
+    spike = (b.Volume > 3 * va) & (rg > 1.5 * rg.rolling(20).mean())
+    sides = pd.Series(np.where(spike & (b.Close > b.Open), -1, np.where(spike & (b.Close < b.Open), 1, 0)), index=b.index)
+    return _lab_style(m1, atr, b, sides, lambda x: 600 <= x <= 720, lambda td: 8.0, None,
+                      lambda ct, x: ct.normalize() + pd.Timedelta(minutes=955), "G_SPIKE", "hold to 3:55 PM", 5)
+
+
+def all_trades(m1, m5, sym="NQ"):
     atr = daily_atr(m5)
-    tr = strat_orb(m1, atr) + strat_asia(m1, atr) + strat_vwap(m1, atr)
+    tr = (strat_orb(m1, atr) + strat_asia(m1, atr) + strat_vwap(m1, atr)) if sym == "NQ" else (strat_gc_asia(m1, atr) + strat_gc_spike(m1, atr))
     for t in tr:
+        t["sym"] = sym
         t["id"] = f"{t['strat']}|{t['entry_ts']:%m%d%H%M}"
         t["risk_pts"] = abs(t["entry"] - t["stop"])
         t["pts"] = (t["exit"] - t["entry"]) * t["side"]
@@ -201,8 +250,9 @@ def all_trades(m1, m5):
 
 
 def pnl(t, risk_usd):
-    q = int(risk_usd // (t["risk_pts"] * PV))
-    return 0.0 if q < 1 else (t["pts"] * PV - 2 * TICK * PV - 2 * FEE) * q, q
+    I = INST[t.get("sym", "NQ")]
+    q = int(risk_usd // (t["risk_pts"] * I["pv"]))
+    return 0.0 if q < 1 else (t["pts"] * I["pv"] - 2 * I["tick"] * I["pv"] - 2 * I["fee"]) * q, q
 
 
 # ---------------------------------------------------------------- paper accounts (stateless replay from the farm start)
@@ -220,6 +270,7 @@ def farm(trades, start_ts, only_ids=None):
     for t in closed:
         d = tday(t["exit_ts"])
         for a in [x for x in accts if x["status"] == "active"]:
+            if LANE_SYM[a["lane"]] != t.get("sym", "NQ"): continue
             p, q = pnl(t, a["risk"])
             if q < 1: continue
             if a["stage"] == "funded" and q > 1: p = p / q * max(1, q // 2)          # funded = half size
@@ -282,17 +333,22 @@ def chart(m1, t, exit_mark=False):
     step = max(1, len(w) // 6)
     ax.set_xticks(range(0, len(w), step)); ax.set_xticklabels([w.index[i].strftime("%H:%M") for i in range(0, len(w), step)], color="#bbb", fontsize=8)
     ax.tick_params(colors="#bbb", labelsize=8); ax.legend(loc="upper left", fontsize=8, facecolor="#222", labelcolor="#ddd")
-    ax.set_title(f"MNQ 5m  |  {t['strat']}  {'LONG' if t['side']>0 else 'SHORT'}  |  PAPER", color="#eee", fontsize=10)
+    ax.set_title(f"{INST[t.get('sym', 'NQ')]['label']} 5m  |  {t['strat']}  {'LONG' if t['side']>0 else 'SHORT'}  |  PAPER", color="#eee", fontsize=10)
     for s in ax.spines.values(): s.set_color("#333")
     buf = io.BytesIO(); fig.tight_layout(); fig.savefig(buf, format="png", facecolor=fig.get_facecolor()); plt.close(fig)
     return buf.getvalue()
 
 
-NAMES = {"ORB": "ORB 5-min breakout", "ASIA": "Asia 15-min engulfing", "VWAP": "60-min VWAP 2σ fade"}
+NAMES = {"ORB": "ORB 5-min breakout", "ASIA": "Asia 15-min engulfing", "VWAP": "60-min VWAP 2σ fade",
+         "G_ASIA": "GOLD Asia 60-min breakout", "G_SPIKE": "GOLD volume-spike fade"}
 
 def entry_text(t):
     s = "🟢 LONG" if t["side"] > 0 else "🔴 SHORT"
     tg_ = f" | Target {t['target']:.2f}" if t["target"] else ""
+    if t.get("sym") == "GC":
+        _, qg = pnl(dict(t, pts=0), TIERS["G"])
+        return (f"🥇 PAPER ALERT: {NAMES[t['strat']]}\n{s} MGC @ {t['entry']:.2f}  ({t['entry_ts']:%a %I:%M %p} ET)\n"
+                f"Stop {t['stop']:.2f} (${t['risk_pts']:.2f}){tg_}\nExit rule: {t['rule']}\nSize: gold lane G ${TIERS['G']} risk = {qg} MGC\n(data ~10 min delayed • paper only)")
     pa, qa = pnl(dict(t, pts=0), TIERS["A"]); pb, qb = pnl(dict(t, pts=0), TIERS["B"])
     return (f"🌾 PAPER ALERT: {NAMES[t['strat']]}\n{s} MNQ @ {t['entry']:.2f}  ({t['entry_ts']:%a %I:%M %p} ET)\n"
             f"Stop {t['stop']:.2f} ({t['risk_pts']:.1f} pts){tg_}\nExit rule: {t['rule']}\n"
@@ -302,6 +358,9 @@ def entry_text(t):
 def exit_text(t):
     pa, _ = pnl(t, TIERS["A"]); pb, _ = pnl(t, TIERS["B"])
     icon = "✅" if t["pts"] > 0 else "❌"
+    if t.get("sym") == "GC":
+        return (f"{icon} CLOSED: {NAMES[t['strat']]} {'LONG' if t['side']>0 else 'SHORT'}\n"
+                f"{t['entry']:.2f} → {t['exit']:.2f} (${t['pts']:+.2f}) at {t['exit_ts']:%I:%M %p} ET\nGold lane G: ${pnl(t, TIERS['G'])[0]:+,.0f}")
     return (f"{icon} CLOSED: {NAMES[t['strat']]} {'LONG' if t['side']>0 else 'SHORT'}\n"
             f"{t['entry']:.2f} → {t['exit']:.2f} ({t['pts']:+.1f} pts) at {t['exit_ts']:%I:%M %p} ET\n"
             f"Lane A: ${pa:+,.0f} | Lane B: ${pb:+,.0f}")
@@ -395,10 +454,10 @@ def dashboard_data(trades, start, mode):
     today_pnl = sum(pnl(t, TIERS["A"])[0] for t in tt)
     open_now = [t for t in mine if not t["closed"]]
     shadows = []
-    for s in ("ORB", "ASIA", "VWAP"):
+    for s in ("ORB", "ASIA", "VWAP", "G_ASIA", "G_SPIKE"):
         st = [t for t in closed if t["strat"] == s]
         w = sum(1 for t in st if t["pts"] > 0); p = sum(pnl(t, TIERS["A"])[0] for t in st)
-        shadows.append(dict(key=s, name={"ORB": "KNIGHT", "ASIA": "PHANTOM", "VWAP": "GOLEM"}[s], cls=NAMES[s], trades=len(st), wins=w,
+        shadows.append(dict(key=s, name={"ORB": "KNIGHT", "ASIA": "PHANTOM", "VWAP": "GOLEM", "G_ASIA": "DRAGON", "G_SPIKE": "REAPER"}[s], cls=NAMES[s], trades=len(st), wins=w,
                             losses=len(st) - w, pnl=round(p), level=1 + len(st) // 5 + max(0, int(p // 1000))))
     gates = []
     for a in accts:
@@ -466,24 +525,29 @@ def loop():
         try:
             if not market_closed(now) or shared["trades"] is None:
                 m1, m5 = fetch()
+                g1, g5 = fetch("GC=F")
+                M1 = {"NQ": m1, "GC": g1}
+                try:
+                    QUOTE.update(gc=round(float(g1.Close.iloc[-1]), 2))
+                except Exception: pass
                 try:
                     rth_ = m1[(m1.index.hour * 60 + m1.index.minute >= 570) & (m1.index.hour * 60 + m1.index.minute < 960)]
                     prev = rth_[rth_.index.date < m1.index[-1].date()]
                     pc = float(prev.Close.iloc[-1]) if len(prev) else float(m1.Close.iloc[0])
                     QUOTE.update(price=round(float(m1.Close.iloc[-1]), 2), chg=round(float(m1.Close.iloc[-1]) - pc, 2), at=f"{m1.index[-1]:%I:%M %p}")
                 except Exception: pass
-                trades = all_trades(m1, m5); shared["trades"] = trades
+                trades = sorted(all_trades(m1, m5, "NQ") + all_trades(g1, g5, "GC"), key=lambda x: x["entry_ts"]); shared["trades"] = trades
                 start = pd.Timestamp(state["start"])
                 for t in trades:
                     if t["entry_ts"] < start: continue
                     if t["id"] not in state["sent_entry"]:
-                        png = chart(m1, t)
+                        png = chart(M1[t["sym"]], t)
                         btn = {"inline_keyboard": [[{"text": "✅ Take", "callback_data": f"take|{t['id']}"}, {"text": "❌ Skip", "callback_data": f"skip|{t['id']}"}]]}
                         tg("sendPhoto", data={"chat_id": TG_CHAT, "caption": entry_text(t), "reply_markup": json.dumps(btn)}, files={"photo": ("c.png", png)})
                         dc_post("paper", embed={"title": f"PAPER ENTRY: {NAMES[t['strat']]}", "description": entry_text(t), "color": 0x4fc3f7}, png=png)
                         state["sent_entry"].append(t["id"])
                     if t["closed"] and t["id"] not in state["sent_exit"]:
-                        png = chart(m1, t, exit_mark=True)
+                        png = chart(M1[t["sym"]], t, exit_mark=True)
                         tg("sendPhoto", data={"chat_id": TG_CHAT, "caption": exit_text(t)}, files={"photo": ("c.png", png)})
                         dc_post("paper", embed={"title": "PAPER EXIT", "description": exit_text(t), "color": 0x66bb6a if t["pts"] > 0 else 0xef5350}, png=png)
                         state["sent_exit"].append(t["id"])
@@ -502,7 +566,7 @@ def loop():
 
 if __name__ == "__main__":
     if sys.argv[1:] == ["replay"]:
-        m1, m5 = fetch(); trades = all_trades(m1, m5)
+        m1, m5 = fetch(); g1, g5 = fetch("GC=F"); trades = sorted(all_trades(m1, m5, "NQ") + all_trades(g1, g5, "GC"), key=lambda x: x["entry_ts"])
         for t in trades:
             pa, q = pnl(t, 200)
             print(f"{t['entry_ts']:%a %m-%d %H:%M} {t['strat']:4s} {'L' if t['side']>0 else 'S'} {t['entry']:.2f} stop {t['stop']:.2f} -> "

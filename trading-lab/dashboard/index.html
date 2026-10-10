@@ -97,7 +97,8 @@ html,body{height:100%;overflow:hidden;background:#02040a;color:var(--text);font-
   <div class="lr"><span>Eval fees</span><b id="fees">$0</b></div>
   <div class="lr"><span>Net</span><b id="net">$0</b></div>
   <div class="lr"><span>Cleared / dead</span><b><span id="gc" style="color:var(--good)">0</span> / <span id="gd" style="color:var(--bad)">0</span></b></div>
-  <div class="tick"><span class="sub">NQ <span id="qat"></span></span><b id="qpx">-</b><b id="qch" style="font-size:13px">-</b></div></div>
+  <div class="tick"><span class="sub">NQ <span id="qat"></span></span><b id="qpx">-</b><b id="qch" style="font-size:13px">-</b></div>
+  <div class="tick" style="border-top:0;margin-top:0;padding-top:2px"><span class="sub">GOLD</span><b id="gcpx" style="color:var(--gold)">-</b><span></span></div></div>
 
 <div class="win quest"><div class="wt">DAILY QUEST <span>resets 6 PM ET</span></div>
   <div class="ql"><span>Hold the line (loss &lt; $<span id="lim">500</span>)</span><b id="qs">CLEAR</b></div>
@@ -254,6 +255,8 @@ function frame(now) {
 
 // ---------- data
 const SVG = {
+  G_ASIA:'<svg viewBox="0 0 64 64"><path d="M10 40c6-16 18-26 34-28-4 5-5 9-3 13 5-2 9-1 13 3-8 1-12 5-14 11-6 9-18 12-30 8l6-6z" fill="#2a1a04" stroke="#ffd166" stroke-width="2"/><circle cx="40" cy="22" r="2.2" fill="#ffef9f"/></svg>',
+  G_SPIKE:'<svg viewBox="0 0 64 64"><path d="M32 6c-12 0-20 9-20 21 0 7 3 12 7 15v12h26V42c4-3 7-8 7-15 0-12-8-21-20-21z" fill="#2a1a04" stroke="#ffd166" stroke-width="2"/><circle cx="25" cy="28" r="3" fill="#ffef9f"/><circle cx="39" cy="28" r="3" fill="#ffef9f"/><path d="M26 46v6M32 46v6M38 46v6" stroke="#ffd166" stroke-width="2"/></svg>',
   ORB:'<svg viewBox="0 0 64 64"><path d="M32 4l9 10-4 7h6l-6 23 6 16H21l6-16-6-23h6l-4-7z" fill="#1a1030" stroke="#c9b3ff" stroke-width="2"/><circle cx="28" cy="15" r="1.8" fill="#7df9ff"/><circle cx="36" cy="15" r="1.8" fill="#7df9ff"/></svg>',
   ASIA:'<svg viewBox="0 0 64 64"><path d="M32 6c10 6 16 16 16 26 0 12-7 22-16 26-9-4-16-14-16-26C16 22 22 12 32 6z" fill="#1a1030" stroke="#c9b3ff" stroke-width="2"/><circle cx="27" cy="27" r="2" fill="#7df9ff"/><circle cx="37" cy="27" r="2" fill="#7df9ff"/></svg>',
   VWAP:'<svg viewBox="0 0 64 64"><rect x="14" y="12" width="36" height="44" rx="6" fill="#1a1030" stroke="#c9b3ff" stroke-width="2"/><circle cx="26" cy="31" r="2.2" fill="#7df9ff"/><circle cx="38" cy="31" r="2.2" fill="#7df9ff"/><path d="M24 44h16" stroke="#c9b3ff" stroke-width="3"/></svg>'};
@@ -289,9 +292,10 @@ function render(d) {
   $("net").textContent = money(l.net); $("net").style.color = l.net >= 0 ? "var(--good)" : "var(--bad)"; $("gc").textContent = l.passed; $("gd").textContent = l.blown;
   if (d.quote && d.quote.price) { $("qpx").textContent = d.quote.price.toLocaleString(undefined, {minimumFractionDigits: 2});
     const c = d.quote.chg || 0; $("qch").textContent = (c >= 0 ? "▲ +" : "▼ ") + c.toFixed(2); $("qch").style.color = c >= 0 ? "var(--good)" : "var(--bad)"; $("qat").textContent = d.quote.at ? "• " + d.quote.at : ""; }
+  if (d.quote && d.quote.gc) $("gcpx").textContent = d.quote.gc.toLocaleString(undefined, {minimumFractionDigits: 2});
   const q = d.quest; $("lim").textContent = q.limit; $("qs").textContent = q.held ? "CLEAR" : "FAILED"; $("qs").style.color = q.held ? "var(--good)" : "var(--bad)";
   $("qp").textContent = money(q.pnl); $("qp").style.color = q.pnl >= 0 ? "var(--good)" : "var(--bad)"; $("qt").textContent = `${q.trades} / ${q.open}`;
-  $("army").innerHTML = d.shadows.map((s, i) => `<div class="sol" data-i="${i}">${SVG[s.key]}<div class="sn">${s.name}</div>
+  $("army").innerHTML = d.shadows.map((s, i) => `<div class="sol" data-i="${i}" style="${s.key.startsWith("G_") ? "border-color:rgba(255,209,102,.6);background:linear-gradient(180deg,rgba(255,209,102,.14),transparent)" : ""}">${SVG[s.key]}<div class="sn">${s.name}</div>
     <div class="sr">LV.${s.level} • <span style="color:var(--good)">${s.wins}W</span> <span style="color:var(--bad)">${s.losses}L</span></div></div>`).join("");
   document.querySelectorAll(".sol").forEach(el => el.onclick = () => { const s = d.shadows[+el.dataset.i];
     card(s.name, "Shadow soldier • " + s.cls, L("Level", s.level) + L("Battles", s.trades) + L("Wins / losses", `${s.wins} / ${s.losses}`) + L("Loot (lane A)", money(s.pnl), s.pnl >= 0 ? "var(--good)" : "var(--bad)")); });
