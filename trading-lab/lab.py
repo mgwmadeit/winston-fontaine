@@ -22,14 +22,14 @@ TFS = [5, 15, 30, 60]
 
 
 @njit(cache=True)
-def sim(ent, side, sd, tmult, maxhold, flat, day, o, h, l, c, max_per_day):
+def sim(ent, side, sd, tmult, maxhold, flat, day, o, h, l, c, max_per_day, pv, risk):
     n = len(ent); out_i = np.full(n, -1); out_pts = np.zeros(n); out_q = np.zeros(n)
     last_exit, cur_day, cnt = -1, -1, 0
     for k in range(n):
         i = ent[k]
         if i <= last_exit or flat[k] < i or sd[k] <= 0: continue
         if day[k] == cur_day and cnt >= max_per_day: continue
-        q = np.floor(RISK / (sd[k] * PV))
+        q = np.floor(risk / (sd[k] * pv))          # pv/risk passed in (numba caches globals as constants)
         if q < 1: continue
         s = side[k]; e = o[i]; stop = e - s * sd[k]
         tg = e + s * tmult * sd[k] if tmult > 0 else np.nan
@@ -186,7 +186,7 @@ def main():
                 for stn, stv in STOPS:
                     sd = np.full(len(idx), float(stv)) if stn.startswith("fix") else np.nan_to_num(atr * stv)
                     for exn, tm, mh in EXITS:
-                        ei, pts, q = sim(ent, side, sd, tm, mh, flat, day, o, h, l, c, 2)
+                        ei, pts, q = sim(ent, side, sd, tm, mh, flat, day, o, h, l, c, 2, PV, RISK)
                         k = ei >= 0
                         if k.sum() < 10: continue
                         pnl = (pts[k] * PV - COST) * q[k]

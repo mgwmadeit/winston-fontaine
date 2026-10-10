@@ -20,8 +20,8 @@ DECISIONS = os.path.join(HERE, "tg_decisions.csv")
 EVAL_FEE = 85                                       # what Moses pays per Topstep 50K eval
 RULES = dict(start=50000, target=3000, dd=2000, consist=0.50, min_days=2, lock=50000,
              pay_days=5, pay_min_day=150, pay_frac=0.50, pay_cap=5000, split=0.90)
-TIERS = {"A": 200, "B": 400, "G": 200}              # $ risk per trade for each farm lane
-LANE_SYM = {"A": "NQ", "B": "NQ", "G": "GC"}          # lanes A/B trade NQ, lane G trades gold
+TIERS = {"A": 200, "B": 400, "G": 200, "S": 100}    # $ risk per trade for each farm lane
+LANE_SYM = {"A": ("NQ",), "B": ("NQ",), "G": ("GC",), "S": ("NQ", "GC")}   # S = SAFE lane: $100 risk, NQ + gold (gold half size) -> ~94% pass in sims
 
 TG_TOKEN = open(os.path.join(HERE, "telegram_token.txt")).read().strip()
 TG_CHAT = open(os.path.join(HERE, "telegram_chat_id.txt")).read().strip()
@@ -270,8 +270,8 @@ def farm(trades, start_ts, only_ids=None):
     for t in closed:
         d = tday(t["exit_ts"])
         for a in [x for x in accts if x["status"] == "active"]:
-            if LANE_SYM[a["lane"]] != t.get("sym", "NQ"): continue
-            p, q = pnl(t, a["risk"])
+            if t.get("sym", "NQ") not in LANE_SYM[a["lane"]]: continue
+            p, q = pnl(t, a["risk"] * (0.5 if (a["lane"] == "S" and t.get("sym") == "GC") else 1))
             if q < 1: continue
             if a["stage"] == "funded" and q > 1: p = p / q * max(1, q // 2)          # funded = half size
             a["bal"] += p; a["days"][d] = a["days"].get(d, 0) + p
