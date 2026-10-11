@@ -81,6 +81,9 @@ def tday(ts): return (ts + pd.Timedelta(hours=6)).normalize().tz_localize(None)
 
 
 # ---------------------------------------------------------------- strategies -> trade list
+def _p(x): return f"{x:,.2f}"
+
+
 def bars(m1, minutes, offset="0min"):
     b = m1.resample(f"{minutes}min", offset=offset).agg({"Open": "first", "High": "max", "Low": "min", "Close": "last", "Volume": "sum"}).dropna()
     last_end = m1.index[-1] + pd.Timedelta(minutes=1)
@@ -126,8 +129,14 @@ def strat_orb(m1, atr, stop_k=0.15):
         last = m1.index.get_loc(d1.index[-1])
         flat_done = d1.index[-1].hour * 60 + d1.index[-1].minute >= 959
         ex, xi, closed = run_exit(m1, gi, side, float(entry), float(stop), None, last if flat_done else 10 ** 9)
+        why = [f"Opening range 9:30-9:35 ET: high {_p(orh)}, low {_p(orl)} (range {orh - orl:.2f} pts).",
+               f"At {d1.index[j0]:%I:%M %p} price broke {'ABOVE the high' if side > 0 else 'BELOW the low'} -> {'LONG' if side > 0 else 'SHORT'} (first break of the day only).",
+               f"Entry {_p(entry)} = the range {'high + 1 tick' if side > 0 else 'low - 1 tick'} (or the open if price gapped past it).",
+               f"Stop {_p(stop)} = {int(stop_k*100)}% of the 14-day average daily range ({a:.1f} pts) = {abs(entry - stop):.1f} pts away.",
+               "No target: hold to 4:00 PM to catch trend days (the ORB makes its money on a few big days).",
+               "Size: risk a fixed $ amount per lane; contracts = $risk / (stop distance x $ per point)."]
         out.append(dict(strat="ORB", entry_ts=d1.index[j0], side=side, entry=float(entry), stop=float(stop), target=None,
-                        exit=float(ex), exit_ts=m1.index[xi] if closed else None, closed=closed, rule="hold to 4 PM"))
+                        exit=float(ex), exit_ts=m1.index[xi] if closed else None, closed=closed, rule="hold to 4 PM", why=why))
     return out
 
 
@@ -154,8 +163,15 @@ def strat_asia(m1, atr):
         end_i = int(np.searchsorted(idx_ns, flat.value, side="right")) - 1
         if flat > m1.index[-1]: end_i = 10 ** 9
         ex, xi, closed = run_exit(m1, i, side, e, e - side * sd, e + side * 2 * sd, end_i)
+        k = b.index.get_loc(ts); pb = b.iloc[k - 1]; cb = b.iloc[k]
+        why = [f"Asia session window (7 PM-2 AM ET). 15-min candle {ts:%I:%M}-{ct:%I:%M %p}.",
+               f"Previous 15-min candle was {'RED' if side > 0 else 'GREEN'}: open {_p(pb.Open)}, close {_p(pb.Close)}.",
+               f"This candle is a {'BULLISH' if side > 0 else 'BEARISH'} ENGULFING: open {_p(cb.Open)}, close {_p(cb.Close)}, its body covers the previous body.",
+               f"Enter {'LONG' if side > 0 else 'SHORT'} at the next 1-min open {_p(e)}.",
+               f"Stop {_p(e - side * sd)} = 10% of the 14-day average daily range ({a:.1f} pts) = {sd:.1f} pts.",
+               f"Target {_p(e + side * 2 * sd)} = 2R. If neither hits, close at 2:55 AM. Max 2 trades a night."]
         out.append(dict(strat="ASIA", entry_ts=m1.index[i], side=side, entry=e, stop=e - side * sd, target=e + side * 2 * sd,
-                        exit=ex, exit_ts=m1.index[xi] if closed else None, closed=closed, rule="2R target, flat 2:55 AM"))
+                        exit=ex, exit_ts=m1.index[xi] if closed else None, closed=closed, rule="2R target, flat 2:55 AM", why=why))
         last_exit = xi if closed else 10 ** 9
         if td != cur_day: cur_day, cnt = td, 0
         cnt += 1
@@ -189,15 +205,21 @@ def strat_vwap(m1, atr):
         end_flat = int(np.searchsorted(idx_ns, flat.value, side="right")) - 1
         end_i = min(end_flat if flat <= m1.index[-1] else 10 ** 9, i + 59)
         ex, xi, closed = run_exit(m1, i, side, e, e - side * sdist, None, end_i)
+        why = [f"60-min candle {ts:%I:%M}-{ct:%I:%M %p} ET (NY session 9:30-3:30).",
+               f"Session VWAP {_p(vw[ts])}, 1 std dev {sd_[ts]:.1f} pts -> {'upper' if side < 0 else 'lower'} 2-sigma band {_p(vw[ts] + (2 if side < 0 else -2) * sd_[ts])}.",
+               f"The candle CLOSED {'above the upper' if side < 0 else 'below the lower'} band at {_p(C[ts])} (stretched too far from fair value).",
+               f"FADE it: enter {'SHORT' if side < 0 else 'LONG'} at the next 1-min open {_p(e)}, betting on a snap back toward VWAP.",
+               f"Stop {_p(e - side * sdist)} = 10% of the 14-day average daily range ({a:.1f} pts).",
+               "Exit after 60 minutes (or the stop). No fixed target."]
         out.append(dict(strat="VWAP", entry_ts=m1.index[i], side=side, entry=e, stop=e - side * sdist, target=None,
-                        exit=ex, exit_ts=m1.index[xi] if closed else None, closed=closed, rule="exit after 60 min"))
+                        exit=ex, exit_ts=m1.index[xi] if closed else None, closed=closed, rule="exit after 60 min", why=why))
         last_exit = xi if closed else 10 ** 9
         if td != cur_day: cur_day, cnt = td, 0
         cnt += 1
     return out
 
 
-def _lab_style(m1, atr, b, sides, window, stop_fn, tgt_mult, flat_fn, strat, rule, bar_min):
+def _lab_style(m1, atr, b, sides, window, stop_fn, tgt_mult, flat_fn, strat, rule, bar_min, why_fn=None):
     """generic: signal on bar close -> enter next 1-min open; max 2/day, no overlap (same as lab.py)"""
     out = []; idx_ns = m1.index.asi8; last_exit, cur_day, cnt = -1, None, 0
     for ts in b.index[(sides != 0).values]:
@@ -216,7 +238,8 @@ def _lab_style(m1, atr, b, sides, window, stop_fn, tgt_mult, flat_fn, strat, rul
         tgt = e + side * tgt_mult * sd if tgt_mult else None
         ex, xi, closed = run_exit(m1, i, side, e, e - side * sd, tgt, end_i)
         out.append(dict(strat=strat, entry_ts=m1.index[i], side=side, entry=e, stop=e - side * sd, target=tgt,
-                        exit=ex, exit_ts=m1.index[xi] if closed else None, closed=closed, rule=rule))
+                        exit=ex, exit_ts=m1.index[xi] if closed else None, closed=closed, rule=rule,
+                        why=why_fn(ts, ct, side, e, sd) if why_fn else []))
         last_exit = xi if closed else 10 ** 9
         if td != cur_day: cur_day, cnt = td, 0
         cnt += 1
@@ -228,8 +251,14 @@ def strat_gc_asia(m1, atr):
     b = bars(m1, 60, offset="30min")
     hi, lo = b.High.shift().rolling(55).max(), b.Low.shift().rolling(55).min()
     sides = pd.Series(np.where(b.Close > hi, 1, np.where(b.Close < lo, -1, 0)), index=b.index)
+    why = lambda ts, ct, side, e, sd: [
+        f"Gold, Asia session (7 PM-2 AM ET). 60-min candle {ts:%I:%M}-{ct:%I:%M %p}.",
+        f"Highest high of the previous 55 hourly candles: {_p(hi[ts])}; lowest low: {_p(lo[ts])}.",
+        f"The candle CLOSED {'ABOVE the 55-hour high' if side > 0 else 'BELOW the 55-hour low'} at {_p(b.Close[ts])} -> a real breakout; go WITH it ({'LONG' if side > 0 else 'SHORT'}).",
+        f"Enter at the next 1-min open {_p(e)}. Stop {_p(e - side * sd)} = 10% of the 14-day average daily range (${sd:.2f}).",
+        "No target: hold until 2:55 AM (or the stop). Gold tends to trend out of the Asia range."]
     return _lab_style(m1, atr, b, sides, lambda x: x >= 1140 or x <= 120, lambda td: 0.10 * atr_for(atr, td), None,
-                      lambda ct, x: ct.normalize() + pd.Timedelta(days=1 if x >= 1140 else 0, minutes=175), "G_ASIA", "hold to 2:55 AM", 60)
+                      lambda ct, x: ct.normalize() + pd.Timedelta(days=1 if x >= 1140 else 0, minutes=175), "G_ASIA", "hold to 2:55 AM", 60, why)
 
 
 def strat_gc_spike(m1, atr):
@@ -238,8 +267,14 @@ def strat_gc_spike(m1, atr):
     va, rg = b.Volume.rolling(20).mean(), (b.High - b.Low)
     spike = (b.Volume > 3 * va) & (rg > 1.5 * rg.rolling(20).mean())
     sides = pd.Series(np.where(spike & (b.Close > b.Open), -1, np.where(spike & (b.Close < b.Open), 1, 0)), index=b.index)
+    why = lambda ts, ct, side, e, sd: [
+        f"Gold, 10:00 AM-12:00 PM ET window. 5-min candle {ts:%I:%M}-{ct:%I:%M %p}.",
+        f"VOLUME SPIKE: {int(b.Volume[ts]):,} contracts vs a 20-candle average of {int(va[ts]):,} ({b.Volume[ts] / va[ts]:.1f}x, needs 3x).",
+        f"Range {rg[ts]:.2f} vs average {rg.rolling(20).mean()[ts]:.2f} ({rg[ts] / rg.rolling(20).mean()[ts]:.1f}x, needs 1.5x). Candle was {'GREEN (up)' if side < 0 else 'RED (down)'}.",
+        f"FADE the spike: enter {'SHORT' if side < 0 else 'LONG'} at the next 1-min open {_p(e)} (big spikes usually snap back).",
+        f"Fixed $8.00 stop at {_p(e - side * sd)}. Hold to 3:55 PM (or the stop)."]
     return _lab_style(m1, atr, b, sides, lambda x: 600 <= x <= 720, lambda td: 8.0, None,
-                      lambda ct, x: ct.normalize() + pd.Timedelta(minutes=955), "G_SPIKE", "hold to 3:55 PM", 5)
+                      lambda ct, x: ct.normalize() + pd.Timedelta(minutes=955), "G_SPIKE", "hold to 3:55 PM", 5, why)
 
 
 def all_trades(m1, m5, sym="NQ"):
@@ -358,6 +393,11 @@ def chart(m1, t, exit_mark=False):
 
 NAMES = {"ORB": "ORB 5-min breakout", "ASIA": "Asia 15-min engulfing", "VWAP": "60-min VWAP 2σ fade",
          "G_ASIA": "GOLD Asia 60-min breakout", "G_SPIKE": "GOLD volume-spike fade"}
+
+def why_text(t):
+    w = t.get("why") or []
+    return ("\n\nWHY:\n" + "\n".join(f"{i + 1}. {x}" for i, x in enumerate(w))) if w else ""
+
 
 def entry_text(t):
     s = "🟢 LONG" if t["side"] > 0 else "🔴 SHORT"
@@ -564,8 +604,8 @@ def loop():
                     if t["id"] not in state["sent_entry"]:
                         png = chart(M1[t["sym"]], t)
                         btn = {"inline_keyboard": [[{"text": "✅ Take", "callback_data": f"take|{t['id']}"}, {"text": "❌ Skip", "callback_data": f"skip|{t['id']}"}]]}
-                        tg("sendPhoto", data={"chat_id": TG_CHAT, "caption": entry_text(t), "reply_markup": json.dumps(btn)}, files={"photo": ("c.png", png)})
-                        dc_post("paper", embed={"title": f"PAPER ENTRY: {NAMES[t['strat']]}", "description": entry_text(t), "color": 0x4fc3f7}, png=png)
+                        tg("sendPhoto", data={"chat_id": TG_CHAT, "caption": (entry_text(t) + why_text(t))[:1020], "reply_markup": json.dumps(btn)}, files={"photo": ("c.png", png)})
+                        dc_post("paper", embed={"title": f"PAPER ENTRY: {NAMES[t['strat']]}", "description": entry_text(t) + why_text(t), "color": 0x4fc3f7}, png=png)
                         state["sent_entry"].append(t["id"])
                     if t["closed"] and t["id"] not in state["sent_exit"]:
                         png = chart(M1[t["sym"]], t, exit_mark=True)

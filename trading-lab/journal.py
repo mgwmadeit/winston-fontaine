@@ -11,7 +11,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 JDIR = os.path.join(HERE, "..", "journal"); CHARTS = os.path.join(JDIR, "charts"); CSV = os.path.join(JDIR, "trades.csv")
 FIELDS = ["id", "mode", "market", "strategy", "side", "entry_time", "exit_time", "minutes_held", "entry", "stop", "target", "exit", "result",
           "points", "R", "risk_pts", "mfe_R", "mae_R", "left_on_table_R", "session", "weekday", "hour_et", "atr", "day_range_so_far",
-          "moses_decision", "lane_pnl", "chart", "logged_at"]
+          "moses_decision", "lane_pnl", "chart", "why", "logged_at"]
 
 
 def _session(ts):
@@ -52,6 +52,7 @@ def record(t, m1, lane_pnl, decision="", png=None, mode="PAPER", atr=None):
                left_on_table_R=round(fav / risk - R, 2), session=_session(t["entry_ts"]), weekday=f"{t['entry_ts']:%a}",
                hour_et=t["entry_ts"].hour, atr=round(atr, 2) if atr else "", day_range_so_far=round(day.High.max() - day.Low.min(), 2) if len(day) else "",
                moses_decision=decision, lane_pnl="; ".join(f"{k} ${v:+,.0f}" for k, v in lane_pnl.items()), chart=chart,
+               why=" || ".join(t.get("why") or []),
                logged_at=dt.datetime.now().isoformat(timespec="seconds"))
     new = not os.path.exists(CSV)
     with open(CSV, "a", newline="", encoding="utf-8") as f:
@@ -71,6 +72,11 @@ def daily_page(date, report_text=""):
         lines.append(f"| {r.entry_time[11:]}-{r.exit_time[11:]} | {r.market} | {r.strategy} | {r.side} | {r.entry} -> {r.exit} | {r.R:+.2f} | "
                      f"{r.mfe_R:+.2f}R | -{r.mae_R:.2f}R | {r.moses_decision if isinstance(r.moses_decision, str) else ''} | {r.lane_pnl} |")
     if j.empty: lines.append("| no closed trades today | | | | | | | | | |")
+    for _, r in j.iterrows():                                  # step-by-step reasoning for every trade (ebook material)
+        steps = str(r.get("why", "")).split(" || ") if isinstance(r.get("why", ""), str) and r.get("why") else []
+        lines += ["", f"## {r.id} - {r.strategy} {r.side} ({r.result}, {r.R:+.2f}R)", "Why the bot took it:"] + [f"{i + 1}. {x}" for i, x in enumerate(steps)]
+        lines += [f"Exit: {r.exit} at {r.exit_time[11:]} | best open profit {r.mfe_R:+.2f}R, worst {-r.mae_R:.2f}R, left on table {r.left_on_table_R:.2f}R"]
+        if isinstance(r.chart, str) and r.chart: lines.append(f"![chart]({r.chart.replace(chr(92), '/')})")
     open(os.path.join(JDIR, f"{date}.md"), "w", encoding="utf-8").write("\n".join(lines) + "\n")
 
 
