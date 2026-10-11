@@ -20,6 +20,8 @@ MANUAL = [  # name, market, source, verdict, key numbers, file
     ("Supply/demand zones + EMA 8/20 cross", "NQ/GC", "Moses", "MIXED", "NQ 15m hold +14/+9/-3R few trades; gold loses", "RESULTS-MONEY-ENGINE.md"),
     ("Opening relative-volume filter on ORB", "NQ", "order flow study", "HELPS", "skip quiet opens, consistent in both periods", "RESULTS-ORDERFLOW.md"),
     ("Prop payout structure (eval farming)", "any", "Lil Fish", "MONEY ENGINE", "+$300-850 net/eval even at a near-zero edge", "RESULTS-MONEY-ENGINE.md"),
+    ("ICT Silver Bullet (3 windows, FVG retrace)", "NQ/GC", "ICT YouTube", "FAIL", "all 32 variants lose; NQ 1m -60 to -192R train", "RESULTS-ICT.md"),
+    ("ICT 2022 model (raid -> MSS -> FVG) / OTE", "NQ/GC", "ICT YouTube", "FAIL", "NQ ~flat; gold +16/+15R only in 2025-26, -41R train", "RESULTS-ICT.md"),
 ]
 
 

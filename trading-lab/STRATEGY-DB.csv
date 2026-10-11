@@ -1767,4 +1767,6 @@ vwap_cross_FADE 60m ASIA,NQ,lab (auto),FAIL,0/16 settings positive in all 3 peri
 vwap_cross_FADE 60m LON,NQ,lab (auto),FAIL,0/16 settings positive in all 3 periods; best atr25/60min: +4/-1/-4R,lab_results.csv
 vwap_cross_FADE 60m NY,NQ,lab (auto),FAIL,1/16 settings positive in all 3 periods; best atr25/2R: +14/-4/-1R,lab_results.csv
 vwap_cross_FADE 60m NYAM,NQ,lab (auto),FAIL,0/16 settings positive in all 3 periods; best atr25/2R: +11/-3/-1R,lab_results.csv
+"ICT Silver Bullet (3 windows, FVG retrace)",NQ/GC,ICT YouTube,FAIL,all 32 variants lose; NQ 1m -60 to -192R train,RESULTS-ICT.md
+ICT 2022 model (raid -> MSS -> FVG) / OTE,NQ/GC,ICT YouTube,FAIL,"NQ ~flat; gold +16/+15R only in 2025-26, -41R train",RESULTS-ICT.md
 ORB 5-min 10% ATR (OLD 5-min stop check),NQ,Zarattini paper,INVALID,+184R was inflated by the lenient entry-bar stop rule,RESULTS-FASTPASS.md
