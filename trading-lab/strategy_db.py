@@ -23,6 +23,8 @@ MANUAL = [  # name, market, source, verdict, key numbers, file
     ("ICT Silver Bullet (3 windows, FVG retrace)", "NQ/GC", "ICT YouTube", "FAIL", "all 32 variants lose; NQ 1m -60 to -192R train", "RESULTS-ICT.md"),
     ("ICT 2022 model (raid -> MSS -> FVG) / OTE", "NQ/GC", "ICT YouTube", "FAIL", "NQ ~flat; gold +16/+15R only in 2025-26, -41R train", "RESULTS-ICT.md"),
     ("Mass-selected portfolio (201 lab strategies, train-only pick)", "NQ/GC/ES", "lab", "FAIL", "unseen: +1,960R then -1,478R; real picks ~= random picks (luck)", "RESULTS-PORTFOLIO-HONEST.md"),
+    ("Zen Trades iFVG model (sweep + inverse FVG)", "NQ/GC", "Zen Trades PDFs", "FAIL", "95 of 96 variants fail; NQ no edge", "RESULTS-ZEN.md"),
+    ("Zen model GOLD 5m London, 1H sweep + momentum", "GC", "Zen Trades PDFs", "WATCH", "+9/+8/+3R at 1R (67-80% win) but tiny samples; sent to auditor", "RESULTS-ZEN.md"),
 ]
 
 

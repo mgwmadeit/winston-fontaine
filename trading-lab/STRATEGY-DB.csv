@@ -1769,5 +1769,7 @@ vwap_cross_FADE 60m NY,NQ,lab (auto),FAIL,1/16 settings positive in all 3 period
 vwap_cross_FADE 60m NYAM,NQ,lab (auto),FAIL,0/16 settings positive in all 3 periods; best atr25/2R: +11/-3/-1R,lab_results.csv
 "ICT Silver Bullet (3 windows, FVG retrace)",NQ/GC,ICT YouTube,FAIL,all 32 variants lose; NQ 1m -60 to -192R train,RESULTS-ICT.md
 ICT 2022 model (raid -> MSS -> FVG) / OTE,NQ/GC,ICT YouTube,FAIL,"NQ ~flat; gold +16/+15R only in 2025-26, -41R train",RESULTS-ICT.md
+Zen Trades iFVG model (sweep + inverse FVG),NQ/GC,Zen Trades PDFs,FAIL,95 of 96 variants fail; NQ no edge,RESULTS-ZEN.md
 "Mass-selected portfolio (201 lab strategies, train-only pick)",NQ/GC/ES,lab,FAIL,"unseen: +1,960R then -1,478R; real picks ~= random picks (luck)",RESULTS-PORTFOLIO-HONEST.md
 ORB 5-min 10% ATR (OLD 5-min stop check),NQ,Zarattini paper,INVALID,+184R was inflated by the lenient entry-bar stop rule,RESULTS-FASTPASS.md
+"Zen model GOLD 5m London, 1H sweep + momentum",GC,Zen Trades PDFs,WATCH,+9/+8/+3R at 1R (67-80% win) but tiny samples; sent to auditor,RESULTS-ZEN.md
