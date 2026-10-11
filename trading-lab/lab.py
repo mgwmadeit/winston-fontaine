@@ -8,7 +8,8 @@ from run_published import load
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SYM = sys.argv[1] if len(sys.argv) > 1 else "NQ"
-PV, TICK, FEE, RISK = {"NQ": (2.0, 0.25, 0.62, 200.0), "GC": (10.0, 0.10, 0.82, 200.0)}[SYM]   # MNQ / MGC micros
+PV, TICK, FEE, RISK = {"NQ": (2.0, 0.25, 0.62, 200.0), "GC": (10.0, 0.10, 0.82, 200.0), "ES": (5.0, 0.25, 0.62, 200.0),
+                       "YM": (0.5, 1.0, 0.62, 200.0), "RTY": (5.0, 0.10, 0.62, 200.0), "CL": (100.0, 0.01, 0.82, 200.0), "6E": (12500.0, 0.00005, 0.62, 200.0)}[SYM]   # micros
 COST = 2 * TICK * PV + 2 * FEE                         # per contract round trip
 TRAIN_END, TEST_END = pd.Timestamp("2025-10-01").date(), pd.Timestamp("2026-04-01").date()
 
@@ -16,7 +17,8 @@ SESSIONS = {  # name: (entry window start, end in minutes of day ET, flat time m
     "NYAM": (570, 690, 955, None), "NY": (570, 930, 955, None),
     "LON": (180, 480, 565, None), "ASIA": (1140, 120, 175, 1140),
     "AFTER10_AM": (600, 720, 955, None), "AFTER10_ALL": (600, 930, 955, None)}
-STOPS = [("fix15", 15), ("fix40", 40), ("atr10", 0.10), ("atr25", 0.25)] if SYM == "NQ" else [("fix3", 3), ("fix8", 8), ("atr10", 0.10), ("atr25", 0.25)]
+FIXED = {"NQ": (15, 40), "GC": (3, 8), "ES": (4, 10), "YM": (30, 80), "RTY": (2, 5), "CL": (0.15, 0.40), "6E": (0.0010, 0.0025)}[SYM]
+STOPS = [(f"fix{FIXED[0]:g}", FIXED[0]), (f"fix{FIXED[1]:g}", FIXED[1]), ("atr10", 0.10), ("atr25", 0.25)]
 EXITS = [("1R", 1.0, 0), ("2R", 2.0, 0), ("hold", 0.0, 0), ("60min", 0.0, 60)]
 TFS = [5, 15, 30, 60]
 

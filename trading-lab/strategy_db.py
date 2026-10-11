@@ -22,6 +22,7 @@ MANUAL = [  # name, market, source, verdict, key numbers, file
     ("Prop payout structure (eval farming)", "any", "Lil Fish", "MONEY ENGINE", "+$300-850 net/eval even at a near-zero edge", "RESULTS-MONEY-ENGINE.md"),
     ("ICT Silver Bullet (3 windows, FVG retrace)", "NQ/GC", "ICT YouTube", "FAIL", "all 32 variants lose; NQ 1m -60 to -192R train", "RESULTS-ICT.md"),
     ("ICT 2022 model (raid -> MSS -> FVG) / OTE", "NQ/GC", "ICT YouTube", "FAIL", "NQ ~flat; gold +16/+15R only in 2025-26, -41R train", "RESULTS-ICT.md"),
+    ("Mass-selected portfolio (201 lab strategies, train-only pick)", "NQ/GC/ES", "lab", "FAIL", "unseen: +1,960R then -1,478R; real picks ~= random picks (luck)", "RESULTS-PORTFOLIO-HONEST.md"),
 ]
 
 
