@@ -13,3 +13,14 @@ The structure is a free option (you lose the fee; the firm eats the drawdown; yo
 Plan: volume eval farming (~10/week, ~+$400 average each, high variance), bot on every account staggered, withdraw ASAP, buy evals only on sale, firms = LucidDaily + Topstep (+ FundedNext to model).
 Caveats: simplified payout and drawdown models (Lucid funded drawdown trails intraday; my model trails end-of-day), firm fine print, account limits.
 Bot rules: Topstep = TopstepX API from own PC; Lucid = allowed via Tradovate/API, no HFT/microscalping; FundedNext = allowed, no latency abuse/cross-person copying (third-party sources; confirm on the official pages).
+
+## Firm comparison (2026-10-10, bot\firms_compare.py; fee x1.3 for resets; P(pass) x avg funded payout - fee)
+| firm | size | pass | avg funded payout | NET/eval (ours) | NET/eval (coin flip) |
+| FundedNext Rapid 50K ($150, no challenge consistency) | x3 | 42% | $2,153 | +$710 | +$372 |
+| FundedNext Rapid 50K | x5 | 44% | $2,397 | +$854 | +$458 |
+| FundedNext Rapid 25K ($80) | x2 | 46% | $1,163 | +$429 | +$182 |
+| Topstep 50K ($85) | x3 | 31% | $1,928 | +$479 | +$453 |
+| LucidDaily 50K ($150) | x3 | 31% | $2,061 | +$435 | +$523 |
+| FundedNext Legacy 50K ($165) | x2 | 26% | $1,453 | +$169 | +$170 |
+PICK for $100/week: FundedNext Rapid 25K (1/wk), move to Rapid 50K after payouts. Funded Rapid has 40% consistency + small payout caps ($800/$1,500).
+Sources: fundednext.com legacy/terms, helpfutures.fundednext.com, pipback, damnpropfirms, tradetanto.
