@@ -17,11 +17,24 @@ INST = {"NQ": dict(pv=2.0, tick=0.25, fee=0.62, label="MNQ", yahoo="NQ=F"),
         "GC": dict(pv=10.0, tick=0.10, fee=0.82, label="MGC", yahoo="GC=F")}   # gold lane = micro gold
 STATE = os.path.join(HERE, "propfarm_state.json")
 DECISIONS = os.path.join(HERE, "tg_decisions.csv")
-EVAL_FEE = 85                                       # what Moses pays per Topstep 50K eval
-RULES = dict(start=50000, target=3000, dd=2000, consist=0.50, min_days=2, lock=50000,
-             pay_days=5, pay_min_day=150, pay_frac=0.50, pay_cap=5000, split=0.90)
-TIERS = {"A": 200, "B": 400, "G": 200, "S": 100}    # $ risk per trade for each farm lane
-LANE_SYM = {"A": ("NQ",), "B": ("NQ",), "G": ("GC",), "S": ("NQ", "GC")}   # S = SAFE lane: $100 risk, NQ + gold (gold half size) -> ~94% pass in sims
+# Prop-firm rules (public 2026 sources, simplified - see trading\firms\*.md). mode "cycle" = payout every N trading days, "keep" = withdraw above a balance.
+FIRM_RULES = {
+    "Topstep 50K":          dict(fee=85,  start=50000, target=3000, dd=2000, consist=0.50, min_days=2, lock=50000,
+                                 mode="cycle", pay_days=5, pay_min_day=150, pay_frac=0.50, pay_cap=5000, minpay=125, split=0.90, fcons=0),
+    "FundedNext Rapid 25K": dict(fee=80,  start=25000, target=1500, dd=1000, consist=0,    min_days=1, lock=25100,
+                                 mode="cycle", pay_days=5, pay_min_day=0, pay_frac=1.0, pay_cap=800, minpay=250, split=0.80, fcons=0.40),
+    "FundedNext Rapid 50K": dict(fee=150, start=50000, target=3000, dd=2000, consist=0,    min_days=1, lock=50100,
+                                 mode="cycle", pay_days=5, pay_min_day=0, pay_frac=1.0, pay_cap=1500, minpay=250, split=0.80, fcons=0.40),
+    "LucidDaily 50K":       dict(fee=150, start=50000, target=3000, dd=2000, consist=0.50, min_days=2, lock=50100,
+                                 mode="keep", keep=52100, minpay=500, split=0.90, pay_days=1),
+}
+EVAL_FEE = 85
+RULES = FIRM_RULES["Topstep 50K"]                    # default (old code paths)
+TIERS = {"A": 200, "B": 400, "G": 200, "S": 100, "F25": 100, "F50": 200, "LD": 200}   # $ risk per trade for each farm lane
+LANE_SYM = {"A": ("NQ",), "B": ("NQ",), "G": ("GC",), "S": ("NQ", "GC"), "F25": ("NQ", "GC"), "F50": ("NQ", "GC"), "LD": ("NQ", "GC")}
+LANE_FIRM = {"A": "Topstep 50K", "B": "Topstep 50K", "G": "Topstep 50K", "S": "Topstep 50K",
+             "F25": "FundedNext Rapid 25K", "F50": "FundedNext Rapid 50K", "LD": "LucidDaily 50K"}
+HALF_GOLD = {"S", "F25", "F50", "LD"}               # mixed lanes trade gold at half size
 
 TG_TOKEN = open(os.path.join(HERE, "telegram_token.txt")).read().strip()
 TG_CHAT = open(os.path.join(HERE, "telegram_chat_id.txt")).read().strip()
@@ -247,44 +260,57 @@ def pnl(t, risk_usd):
 
 # ---------------------------------------------------------------- paper accounts (stateless replay from the farm start)
 def farm(trades, start_ts, only_ids=None):
-    """Replays closed trades through Topstep 50K rules. Each lane: eval -> pass -> funded (and a NEW eval starts) / blow -> rebuy."""
+    """Replays closed trades through each lane's PROP FIRM rules. Each lane: eval -> pass -> funded (and a NEW eval starts) / blow -> rebuy."""
     closed = [t for t in trades if t["closed"] and t["entry_ts"] >= start_ts and (only_ids is None or t["id"] in only_ids)]
     closed.sort(key=lambda t: t["exit_ts"])
-    accts, ledger = [], {"fees": 0.0, "payouts": 0.0, "evals": 0, "passed": 0, "blown": 0}
+    accts, ledger = [], {"fees": 0.0, "payouts": 0.0, "evals": 0, "passed": 0, "blown": 0, "by_firm": {}}
+    def firm_led(f): return ledger["by_firm"].setdefault(f, {"fees": 0.0, "payouts": 0.0, "evals": 0, "passed": 0, "blown": 0})
     def new_eval(lane):
-        ledger["fees"] += EVAL_FEE; ledger["evals"] += 1
-        a = dict(name=f"{lane}-EVAL-{ledger['evals']}", lane=lane, risk=TIERS[lane], stage="eval", bal=RULES["start"], peak=RULES["start"],
-                 floor=RULES["start"] - RULES["dd"], days={}, good=0, paid=0.0, status="active")
+        R = FIRM_RULES[LANE_FIRM[lane]]
+        ledger["fees"] += R["fee"]; ledger["evals"] += 1; fl = firm_led(LANE_FIRM[lane]); fl["fees"] += R["fee"]; fl["evals"] += 1
+        a = dict(name=f"{lane}-EVAL-{ledger['evals']}", lane=lane, firm=LANE_FIRM[lane], R=R, risk=TIERS[lane], stage="eval", bal=R["start"], peak=R["start"],
+                 floor=R["start"] - R["dd"], days={}, good=0, paid=0.0, status="active")
         accts.append(a); return a
     for lane in TIERS: new_eval(lane)
     for t in closed:
         d = tday(t["exit_ts"])
         for a in [x for x in accts if x["status"] == "active"]:
             if t.get("sym", "NQ") not in LANE_SYM[a["lane"]]: continue
-            p, q = pnl(t, a["risk"] * (0.5 if (a["lane"] == "S" and t.get("sym") == "GC") else 1))
+            R = a["R"]
+            p, q = pnl(t, a["risk"] * (0.5 if (a["lane"] in HALF_GOLD and t.get("sym") == "GC") else 1))
             if q < 1: continue
             if a["stage"] == "funded" and q > 1: p = p / q * max(1, q // 2)          # funded = half size
             a["bal"] += p; a["days"][d] = a["days"].get(d, 0) + p
             if a["bal"] <= a["floor"]:
-                a["status"] = "blown"; ledger["blown"] += 1
+                a["status"] = "blown"; ledger["blown"] += 1; firm_led(a["firm"])["blown"] += 1
                 if a["stage"] == "eval": new_eval(a["lane"])
                 continue
-            prof = a["bal"] - RULES["start"]
+            prof = a["bal"] - R["start"]
             if a["stage"] == "eval":
                 best = max(a["days"].values())
-                if prof >= RULES["target"] and best <= RULES["consist"] * prof and len(a["days"]) >= RULES["min_days"]:
-                    a.update(stage="funded", name=a["name"].replace("EVAL", "FUNDED"), bal=RULES["start"], peak=RULES["start"],
-                             floor=RULES["start"] - RULES["dd"], days={}, good=0)
-                    ledger["passed"] += 1; new_eval(a["lane"])
-        # end-of-day trailing (EOD drawdown) and payout days, applied once per trading day boundary
+                if prof >= R["target"] and (not R["consist"] or best <= R["consist"] * prof) and len(a["days"]) >= R["min_days"]:
+                    a.update(stage="funded", name=a["name"].replace("EVAL", "FUNDED"), bal=R["start"], peak=R["start"],
+                             floor=R["start"] - R["dd"], days={}, good=0)
+                    ledger["passed"] += 1; firm_led(a["firm"])["passed"] += 1; new_eval(a["lane"])
+        # end-of-day trailing drawdown + payouts (once per closed trade boundary)
         for a in [x for x in accts if x["status"] == "active"]:
+            R = a["R"]
             if a["bal"] > a["peak"]:
-                a["peak"] = a["bal"]; a["floor"] = min(max(a["floor"], a["peak"] - RULES["dd"]), RULES["lock"] if a["stage"] == "funded" else 10 ** 9)
-            if a["stage"] == "funded":
-                a["good"] = sum(1 for v in a["days"].values() if v >= RULES["pay_min_day"])
-                if a["good"] >= RULES["pay_days"] and a["bal"] > RULES["start"]:
-                    amt = min((a["bal"] - RULES["start"]) * RULES["pay_frac"], RULES["pay_cap"])
-                    a["bal"] -= amt; a["paid"] += amt * RULES["split"]; ledger["payouts"] += amt * RULES["split"]; a["days"] = {}
+                a["peak"] = a["bal"]; a["floor"] = min(max(a["floor"], a["peak"] - R["dd"]), R["lock"] if a["stage"] == "funded" else 10 ** 9)
+            if a["stage"] != "funded": continue
+            amt = 0.0
+            if R["mode"] == "keep":
+                if a["bal"] >= R["keep"] + R["minpay"]: amt = a["bal"] - R["keep"]
+            else:
+                a["good"] = sum(1 for v in a["days"].values() if v >= max(R["pay_min_day"], 0.01))
+                pos = [v for v in a["days"].values() if v > 0]
+                ok_days = (a["good"] >= R["pay_days"]) if R["pay_min_day"] else (len(a["days"]) >= R["pay_days"])
+                ok_cons = (not R["fcons"]) or (pos and max(pos) <= R["fcons"] * sum(pos))
+                if ok_days and ok_cons and a["bal"] - R["start"] >= R["minpay"]:
+                    amt = min((a["bal"] - R["start"]) * R["pay_frac"], R["pay_cap"])
+            if amt > 0:
+                a["bal"] -= amt; a["paid"] += amt * R["split"]; ledger["payouts"] += amt * R["split"]
+                firm_led(a["firm"])["payouts"] += amt * R["split"]; a["days"] = {}
     return accts, ledger
 
 
@@ -373,14 +399,16 @@ def report_text(trades, state):
     lines = [f"🌾 THE FARM AT THE CLOSE: {pd.Timestamp.now(tz=TZ):%a %b %d}", f"Trades closed today: {len(tt)}"]
     for t in tt:
         pa, _ = pnl(t, TIERS["A"]); lines.append(f"  • {t['strat']} {'L' if t['side']>0 else 'S'} {t['pts']:+.1f} pts (lane A ${pa:+,.0f})")
-    lines.append("\nACCOUNTS (paper Topstep 50K):")
+    lines.append("\nACCOUNTS (paper, each lane uses its prop firm's rules):")
     for a in accts:
         icon = {"blown": "💀", "active": "🌱" if a["stage"] == "eval" else "🌽"}[a["status"]]
-        prog = (f"{a['bal']-RULES['start']:+,.0f} / +{RULES['target']:,}" if a["stage"] == "eval" else f"bal {a['bal']:,.0f}, paid ${a['paid']:,.0f}")
-        lines.append(f"  {icon} {a['name']} (${a['risk']} risk): {a['status']}, {prog}")
+        prog = (f"{a['bal']-a['R']['start']:+,.0f} / +{a['R']['target']:,}" if a["stage"] == "eval" else f"bal {a['bal']:,.0f}, paid ${a['paid']:,.0f}")
+        lines.append(f"  {icon} {a['name']} [{a['firm']}] (${a['risk']} risk): {a['status']}, {prog}")
     net = led["payouts"] - led["fees"]
     lines.append(f"\nHARVEST: {led['evals']} evals bought (${led['fees']:,.0f} paper fees), {led['passed']} passed, {led['blown']} blown, "
                  f"${led['payouts']:,.0f} paid out → net ${net:+,.0f}")
+    for fname, fl in led.get("by_firm", {}).items():
+        lines.append(f"  • {fname}: {fl['evals']} evals (${fl['fees']:,.0f}), {fl['passed']} passed, {fl['blown']} blown, ${fl['payouts']:,.0f} paid → net ${fl['payouts']-fl['fees']:+,.0f}")
     lines.append(f"YOUR PICKS (Take only): {len(taken)} taken → paid ${mled['payouts']:,.0f}, net ${mled['payouts']-mled['fees']:+,.0f}")
     return "\n".join(lines)
 
@@ -451,14 +479,14 @@ def dashboard_data(trades, start, mode):
                             losses=len(st) - w, pnl=round(p), level=1 + len(st) // 5 + max(0, int(p // 1000))))
     gates = []
     for a in accts:
-        prof = a["bal"] - RULES["start"]
+        R = a["R"]; prof = a["bal"] - R["start"]
         if a["stage"] == "eval":
-            pct = max(0, min(100, prof / RULES["target"] * 100)); goal = f"{prof:+,.0f} / +{RULES['target']:,}"
+            pct = max(0, min(100, prof / R["target"] * 100)); goal = f"{prof:+,.0f} / +{R['target']:,}"
         else:
-            pct = min(100, a["good"] / RULES["pay_days"] * 100); goal = f"{a['good']}/{RULES['pay_days']} payout days • paid ${a['paid']:,.0f}"
+            pct = min(100, len(a["days"]) / max(R["pay_days"], 1) * 100); goal = f"{a['firm']} • paid ${a['paid']:,.0f}"
         room = a["bal"] - a["floor"]
-        gates.append(dict(name=a["name"], lane=a["lane"], risk=a["risk"], stage=a["stage"], status=a["status"], pct=round(pct, 1),
-                          goal=goal, room=round(room), danger=round(max(0, min(100, 100 - room / RULES["dd"] * 100)), 1)))
+        gates.append(dict(name=a["name"], lane=a["lane"], firm=a["firm"], risk=a["risk"], stage=a["stage"], status=a["status"], pct=round(pct, 1),
+                          goal=goal, room=round(room), danger=round(max(0, min(100, 100 - room / R["dd"] * 100)), 1)))
     log = []
     for t in sorted(mine, key=lambda x: x["exit_ts"] or x["entry_ts"], reverse=True)[:14]:
         p = pnl(t, TIERS["A"])[0]
