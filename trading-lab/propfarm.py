@@ -9,6 +9,7 @@
 #   VWAP     60-min close beyond VWAP +/-2 sigma -> FADE it, 9:30-3:30, stop 10% ATR, exit after 60 min, max 2/day
 import os, sys, io, json, time, threading, datetime as dt
 import numpy as np, pandas as pd, requests
+import journal                                      # automatic trade journal (trading\journal\)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 TZ = "America/New_York"
@@ -533,6 +534,8 @@ def market_closed(now):
 
 
 def loop():
+    global JLOGGED
+    JLOGGED = journal.already_logged()
     state = load_state(); shared = {"trades": None, "state": state}
     threading.Thread(target=tg_listener, args=(lambda: shared,), daemon=True).start()
     os.makedirs(DASH, exist_ok=True)
@@ -543,7 +546,7 @@ def loop():
         try:
             if not market_closed(now) or shared["trades"] is None:
                 m1, m5 = fetch()
-                g1, g5 = fetch("GC=F")
+                g1, g5 = fetch("GC=F"); G5 = g5
                 M1 = {"NQ": m1, "GC": g1}
                 try:
                     QUOTE.update(gc=round(float(g1.Close.iloc[-1]), 2))
@@ -569,12 +572,22 @@ def loop():
                         tg("sendPhoto", data={"chat_id": TG_CHAT, "caption": exit_text(t)}, files={"photo": ("c.png", png)})
                         dc_post("paper", embed={"title": "PAPER EXIT", "description": exit_text(t), "color": 0x66bb6a if t["pts"] > 0 else 0xef5350}, png=png)
                         state["sent_exit"].append(t["id"])
+                    if t["closed"] and t["id"] not in JLOGGED:              # automatic journal entry (once per trade)
+                        try:
+                            lanes = {ln: pnl(t, TIERS[ln] * (0.5 if (ln in HALF_GOLD and t.get("sym") == "GC") else 1))[0]
+                                     for ln in TIERS if t.get("sym", "NQ") in LANE_SYM[ln]}
+                            journal.record(t, M1[t["sym"]], lanes, decisions().get(t["id"], ""), png=chart(M1[t["sym"]], t, exit_mark=True),
+                                           atr=atr_for(daily_atr(G5 if t.get("sym") == "GC" else m5), tday(t["entry_ts"])))
+                            JLOGGED.add(t["id"])
+                        except Exception as e: print("journal error", e, flush=True)
                 # 5 PM ET daily report (Mon-Fri)
                 if now.weekday() < 5 and now.hour == 17 and now.minute >= 5 and state["last_report"] != str(now.date()):
                     txt = report_text(trades, state)
                     tg("sendMessage", json={"chat_id": TG_CHAT, "text": txt})
                     dc_post("daily-report", embed={"title": "🌾 The farm at the close", "description": txt[:4000], "color": 0xf1c40f})
                     state["last_report"] = str(now.date())
+                    try: journal.daily_page(now.date(), txt); journal.lessons()
+                    except Exception as e: print("journal page error", e, flush=True)
                 json.dump(state, open(STATE, "w"))
             if shared["trades"] is not None: write_dashboard(shared["trades"], state)
         except Exception as e:
