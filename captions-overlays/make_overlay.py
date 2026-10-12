@@ -26,7 +26,7 @@ size = int(sys.argv[5]) if len(sys.argv) > 5 else 56
 f = ImageFont.truetype(black_font, size)
 max_w = W - 2 * RIGHT_RAIL - 80 if align == "center" else 480
 lines = []
-for part in caption.split("|"):
+for part in (caption.split("|") if caption.strip() else []):  # "" = Kick strip only
     cur = ""
     for w in part.split():
         t = (cur + " " + w).strip()
@@ -38,12 +38,13 @@ for part in caption.split("|"):
     lines.append(cur)
 lh = int(size * 1.3)
 pad = int(size * 0.7)
-box_w = max(d.textlength(l, font=f) for l in lines) + 2 * pad
-box_h = lh * len(lines) + pad
-x0 = (W - box_w) / 2 if align == "center" else 48
-y0 = max(SAFE_TOP, min(y0, SAFE_BOTTOM - 110 - box_h))  # never under IG UI or the strip
-d.rounded_rectangle([x0 + 6, y0 + 8, x0 + box_w + 6, y0 + box_h + 8], 26, fill=(0, 0, 0, 70))  # soft shadow
-d.rounded_rectangle([x0, y0, x0 + box_w, y0 + box_h], 26, fill=(255, 255, 255, 255))
+if lines:
+    box_w = max(d.textlength(l, font=f) for l in lines) + 2 * pad
+    box_h = lh * len(lines) + pad
+    x0 = (W - box_w) / 2 if align == "center" else 48
+    y0 = max(SAFE_TOP, min(y0, SAFE_BOTTOM - 110 - box_h))  # never under IG UI or the strip
+    d.rounded_rectangle([x0 + 6, y0 + 8, x0 + box_w + 6, y0 + box_h + 8], 26, fill=(0, 0, 0, 70))  # soft shadow
+    d.rounded_rectangle([x0, y0, x0 + box_w, y0 + box_h], 26, fill=(255, 255, 255, 255))
 for i, l in enumerate(lines):
     tw = d.textlength(l, font=f)
     tx = (W - tw) / 2 if align == "center" else x0 + pad
